@@ -21,22 +21,25 @@ along with GreenTea.  If not, see <http://www.gnu.org/licenses/>.
 
 package dima
 
-trait Role extends greentea.State
+import dima.state._
+
+trait Role extends State
 
 //class Role[State]
-class Protocol
-extends greentea.GreenTeaSeed {
+class Protocol(referee : Agent[State])
+extends GreenTeaSeed {
 
+  implicit val agent = referee
 }
 
-trait ProtocolCore extends greentea.GreenTeaComponent
+trait ProtocolCore[S <: State] extends GreenTeaComponent[S]
+
+
+         /*
 
 
 import dima.Role
 import dima.{Role, ConversationIdentifier}
-
-
-         /*
 
 class Protocol[State] extends greentea.GreenTeaComponent {
 

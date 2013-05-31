@@ -18,7 +18,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the Lesser GNU General Public License
 along with GreenTea.  If not, see <http://www.gnu.org/licenses/>.
   **/
-import scala.collection.mutable.ListBuffer
+
+   import commands.Protocols
+   import dima.commands._
+   import dima.state.State
+   import scala.collection.mutable.ListBuffer
 
 package object dima {
 
@@ -33,9 +37,9 @@ package object dima {
   /* */
 
   trait GreenTeaArtefact[Id <: ArtefactIdentifier]
-    extends GreenTeaSeed[Id] with Speech with Reactivity with Protocols {
+    extends GreenTeaSeed  with Reactivity with Protocols with Identification[Id] {
 
-    protected[greentea] implicit val agent : Agent[State]
+    protected[dima] implicit val agent : Agent[State]
 
   }
 
@@ -43,10 +47,11 @@ package object dima {
   /* */
 
 
-  trait GreenTeaSeed[Id <: Identifier]
-    extends GreenTea with Identified[Id] {
+  trait GreenTeaSeed extends GreenTea {
 
-    protected[greentea] implicit val agent : Agent[State]
+    protected[dima] implicit val agent : Agent[State]
+
+    import dima.commands.Speech._
 
     }
 
@@ -59,7 +64,19 @@ package object dima {
     extends GreenTeaArtefact[CommandIdentifier]
 
 
+  /** * Private identifieir
+    *
+    */
 
+  type Key = Long
+  type Random = java.util.Random
+
+  /**
+   * Speech
+   */
+
+
+       type ACLOption = MessageOption
 
   /** *****
     * State
@@ -71,10 +88,10 @@ package object dima {
     *
     *
     */
-  type State
-
-  //with Source[State]
+ // type State = {val yo : Int}//knowledge.Source[State]
   // extends GreenTeaArtefact[StateIdentifier]
+
+  class State
 
   /** * **
     * Agent
@@ -88,9 +105,10 @@ package object dima {
   implicit def stringToAgentIdentifier(s: String): AgentIdentifier = new AgentIdentifier(s);
 
   type Agent[+S <: State]
-  = GreenTeaSeed[AgentIdentifier]
-    with GreenTeaComponent
-    with knowledge.Source[GreenTeaComponent] {
+  = GreenTeaSeed with Identification[AgentIdentifier]
+    with GreenTeaComponent[S]
+    with knowledge.Source[GreenTeaComponent[S]]
+    with knowledge.Source[S] {
 
 
     /* */
@@ -98,7 +116,7 @@ package object dima {
     val id: AgentIdentifier
 
     /* */
-    type  StateType = S
+    type  MyStateType = S
     val state: S
 
 
@@ -136,7 +154,7 @@ package object dima {
       def isActivated
     }
 
-    type GreenTeaClock = greentea.GreenTeaArtefact[ClockIdentifier] {
+    type GreenTeaClock = dima.GreenTeaArtefact[ClockIdentifier] {
 
       val intialDate: java.util.Date
     }
@@ -144,7 +162,7 @@ package object dima {
 
     type HookTest = Unit => Boolean
 
-    trait Hook extends greentea.GreenTea {
+    trait Hook extends dima.GreenTea {
 
       var isHooked: Boolean = false
 
@@ -170,7 +188,11 @@ package object dima {
 
     type Knowledge = List[Information]
 
-    type Source[I <: Information] = GreenTeaArtefact[SourceIdentifier]
+    type Source[I <: Information] = GreenTeaArtefact[SourceIdentifier] {
+
+      //val sources : Set[I]
+
+    }
 
     type KnowledgeBase = {
 
@@ -186,16 +208,16 @@ package object dima {
       val referee: Identifier
 
     }
+  }
 
 
 
-    type Configuration[Type] = {
+  type Configuration[Type] = {
 
-      val agent: Agent[State]
+    val agent: Agent[State]
 
-      def apply(): Type
+    def apply(): Type
 
-    }
   }
 
   object sage {
@@ -244,14 +266,12 @@ package object dima {
 
     type MessageTrace = GreenTeaThrowable
 
-    class ExceptionOption extends greentea.GreenTeaOption
+    class ExceptionOption extends dima.GreenTeaOption
 
-    class ExceptionMessage(val ex: Exception, val cause: String)
+    class ExceptionMessage(val ex: Exception)(implicit val cause: String)
       extends Message with Performative[ExceptionOption]
 
-    class LogMessage extends  Message with Performative[LogOption]
-
-    class LogOption extends greentea.GreenTeaOption
+    class LogMessage extends  Message with Performative[SyncMessageOption]
 
 
   }

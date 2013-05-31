@@ -21,7 +21,7 @@ along with GreenTea.  If not, see <http://www.gnu.org/licenses/>.
 
 package dima
 
-import greentea._
+import dima._
 import knowledge._
 
 /**
@@ -34,28 +34,26 @@ trait Identifier extends GreenTea {
 }
 
 
-trait Identified[I <: Identifier] {
+trait Identification[I <: Identifier] {
 
   val id: I
 }
 
 
-class SyncIdentifier() extends Identifier
+abstract class SyncIdentifier() extends Identifier
 
-class AsyncIdentifier() extends Identifier
+abstract class AsyncIdentifier() extends Identifier
 
 /**
  * Localdentifier is the most general agent identifier
  * the one that contains the agent itself
  */
 
-case class PrivateIdentifier[O <: GreenTea](val o: O)
+case class PrivateIdentifier[O <: GreenTea with Identification[Identifier]](val o: O)
                                            (implicit val key: Key, dice: Random)
-  extends SyncIdentifier  {
+  extends SyncIdentifier {
 
-  type Key = Long
-  type Random = java.util.Random
-
+  val canonicalId: String = o.id.canonicalId
 }
 
 /**
@@ -64,6 +62,8 @@ case class PrivateIdentifier[O <: GreenTea](val o: O)
  */
 case class AgentIdentifier(val name: Identifier)
   extends AsyncIdentifier {
+
+  val canonicalId: String = name.canonicalId
 
   case class QueryState(val referee: AgentIdentifier) extends Query
 
@@ -77,7 +77,6 @@ case class AgentIdentifier(val name: Identifier)
   val core: QueryCore = new QueryCore(this)
   val acq : QueryAcquaintance = new QueryAcquaintance(this)
   //retourne la liste des groupes
-
 }
 
 
@@ -118,7 +117,7 @@ case class GroupIdentifier(groupName: Identifier, ref: AgentIdentifier)
 
 class  GreenTeaComponentIdentifier extends SyncIdentifier
 
-case class ComponentIdentifier()  extends GreenTeaComponentIdentifier
+case class ComponentIdentifier(id : String)  extends GreenTeaComponentIdentifier
 
 case class ProtocolIdentifier() extends GreenTeaComponentIdentifier
 

@@ -20,7 +20,8 @@ along with GreenTea.  If not, see <http://www.gnu.org/licenses/>.
 **/
 package dima
 
-import greentea._
+import dima.state._
+import dima.commands.returns._
 import sage._
 
 /* Messages */
@@ -33,10 +34,10 @@ trait Performative[O <: PerformativeOption]
 
   type M <: Message
 
-  val message: M  = null
+  val message: Option[M]  = None
 
 
-  val options: O = null
+  val options: Option[O] = None
 
 
   def apply()   = {}
@@ -83,7 +84,7 @@ case class ASyncMessage()
 
 /* */
 
-case class SyncMessage[ReturnType <: Any]
+case class SyncMessage[ReturnType <: Any]()
   extends Message {
 
   def apply(implicit agent: Agent[State]) = {
@@ -105,11 +106,13 @@ case class SyncPerformative[O <: PerformativeOption, R <: Any]()
 }
 
 
-class MessageOption extends GreenTeaOption
+case class MessageOption() extends GreenTeaOption
+
+case class SyncMessageOption() extends MessageOption
 
 class MessageParser[M <: Message] extends GreenTea
 
 trait MessageHandler[R <: Return, M <: Message]
-  extends Proactivity[R]
+  extends Activity[R]
 
  class  AcquaintanceOption extends GreenTeaOption
