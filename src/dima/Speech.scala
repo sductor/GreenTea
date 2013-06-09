@@ -1,118 +1,101 @@
 /**
 GreenTea Language
 Copyright 2013 Sylvain Ductor
-**/
+  * */
 /**
-This file is part of GreenTea.
+This file is part of GreenTeaObject.
 
-GreenTea is free software: you can redistribute it and/or modify
+GreenTeaObject is free software: you can redistribute it and/or modify
 it under the terms of the Lesser GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-GreenTea is distributed in the hope that it will be useful,
+GreenTeaObject is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
 
 You should have received a copy of the Lesser GNU General Public License
-along with GreenTea.  If not, see <http://www.gnu.org/licenses/>.
-**/
+along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
+  * */
 package dima
 
-import dima.state._
-import dima.commands.returns._
+import returns._
 import sage._
 
 /* Messages */
 
+class MessageContent extends GreenTeaObject
 
-class PerformativeOption extends GreenTeaOption
-
-trait Performative[O <: PerformativeOption]
+trait Performative [O <: PerformativeOption]
   extends GreenTeaCommand[MessageIdentifier] {
 
-  type M <: Message
-
-  val message: Option[M]  = None
-
-
-  val options: Option[O] = None
-
-
-  def apply()   = {}
-
-}
-
-
-class MessageContent extends GreenTea
-
-trait Message {
+ // type O <: PerformativeOption
 
   type C <: MessageContent
 
-  val id: MessageIdentifier
+  /* */
 
-  val content: C
+  val content: Option[C] = None
+
+  val options: Option[O] = None
 
   /* sage */
 
   val inreplyto: Option[List[MessageTrace]]
 
   val internaltrace: GreenTeaThrowable
+
 }
+
+class PerformativeOption extends GreenTeaOption
 
 
 /* */
 
-case class ASyncMessage()
-  extends Message {
+abstract class ASyncPerformative[O <: PerformativeOption]()
+  extends Performative[O] {
 
-  val id: MessageIdentifier
+  /* a mettre dans asyncperf option */
   val sender: Identifier
 
   val receivers: List[Identifier]
+  /* a mettre dans asyncperf option */
 
-  def apply(agent: Agent[State]) = {
+  def apply(agent: GreenTeaAgent[State]) = {
     agent.send(this)
   }
 
-  def send(agent: Agent[State]) = {
-    apply(agent: Agent[State])
+  /* Syntaxic sugar */
+  def send(agent: GreenTeaAgent[State]) = {
+    apply(agent: GreenTeaAgent[State])
   }
 }
 
 /* */
 
-case class SyncMessage[ReturnType <: Any]()
-  extends Message {
+abstract class ASyncPerformativeWithReturn[O <: PerformativeOption, ReturnType <: Any]()
+  extends ASyncPerformative[O]
 
-  def apply(implicit agent: Agent[State]) = {
+/* */
+
+abstract class SyncPerformative[O <: PerformativeOption, ReturnType <: Any]()
+  extends Performative[O] {
+
+  def apply(implicit agent: GreenTeaAgent[State]) : ReturnType = {
     agent.order(this)
   }
 
-  def execute(agent: Agent[State]) = {
-    apply(agent: Agent[State])
+  /* Syntaxic sugar */
+  def execute(agent: GreenTeaAgent[State]) = {
+    apply(agent: GreenTeaAgent[State])
   }
 
 }
 
-/* Commands */
+/*
+trait MessageHandlerOption extends ProactivityOption
 
-
-case class SyncPerformative[O <: PerformativeOption, R <: Any]()
-  extends  Performative[O] {
-  type M=SyncMessage[R]
-}
-
-
-case class MessageOption() extends GreenTeaOption
-
-case class SyncMessageOption() extends MessageOption
-
-class MessageParser[M <: Message] extends GreenTea
-
-trait MessageHandler[R <: Return, M <: Message]
-  extends Activity[R]
-
- class  AcquaintanceOption extends GreenTeaOption
+trait MessageHandler[R <: Return, M <: Performative[PerformativeOption]]
+  extends Activity[MessageHandlerOption]
+  */

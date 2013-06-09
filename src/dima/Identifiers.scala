@@ -3,20 +3,20 @@ GreenTea Language
 Copyright 2013 Sylvain Ductor
   * */
 /**
-This file is part of GreenTea.
+This file is part of GreenTeaObject.
 
-GreenTea is free software: you can redistribute it and/or modify
+GreenTeaObject is free software: you can redistribute it and/or modify
 it under the terms of the Lesser GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-GreenTea is distributed in the hope that it will be useful,
+GreenTeaObject is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
 
 You should have received a copy of the Lesser GNU General Public License
-along with GreenTea.  If not, see <http://www.gnu.org/licenses/>.
+along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
 
 package dima
@@ -27,11 +27,10 @@ import knowledge._
 /**
  * Identifier
  */
+// extends GreenTeaObject {
 
-trait Identifier extends GreenTea {
-
-  val canonicalId : String
-}
+  //val canonicalId: String
+//}
 
 
 trait Identification[I <: Identifier] {
@@ -49,21 +48,21 @@ abstract class AsyncIdentifier() extends Identifier
  * the one that contains the agent itself
  */
 
-case class PrivateIdentifier[O <: GreenTea with Identification[Identifier]](val o: O)
-                                           (implicit val key: Key, dice: Random)
+case class PrivateIdentifier[O <: GreenTeaObject with Identification[Identifier]](val o: O)
+                                                                           (implicit val key: Key, dice: Random)
   extends SyncIdentifier {
 
-  val canonicalId: String = o.id.canonicalId
+  //val canonicalId: String = o.id.canonicalId
 }
 
 /**
  * An identifier associated to a unique string
  * and generating query about the public state of it agent
  */
-case class AgentIdentifier(val name: Identifier)
+class AgentIdentifier(val name: Identifier)
   extends AsyncIdentifier {
 
-  val canonicalId: String = name.canonicalId
+  // val canonicalId: String = name.canonicalId
 
   case class QueryState(val referee: AgentIdentifier) extends Query
 
@@ -75,7 +74,7 @@ case class AgentIdentifier(val name: Identifier)
 
   val state: QueryState = new QueryState(this)
   val core: QueryCore = new QueryCore(this)
-  val acq : QueryAcquaintance = new QueryAcquaintance(this)
+  val acq: QueryAcquaintance = new QueryAcquaintance(this)
   //retourne la liste des groupes
 }
 
@@ -93,14 +92,14 @@ case class AgentIdentifier(val name: Identifier)
   * Allow artefact handling
   *
   * @param groupName
-  * @param ref
+  * @param
   */
-case class GroupIdentifier(groupName: Identifier, ref: AgentIdentifier)
-  extends Identifier with Set[AgentIdentifier] with Query {
+case class GroupIdentifier(val groupName: Identifier, var groupReferee: AgentIdentifier)
+  extends AgentIdentifier(groupName) with Set[AgentIdentifier] with Query {
 
-  var referee: AgentIdentifier = ref
+  val referee: AgentIdentifier = this
 
-  val members: Set[AgentIdentifier]
+  var members: Set[AgentIdentifier] = _
 
   def contains(elem: AgentIdentifier): Boolean = members contains elem
 
@@ -115,13 +114,13 @@ case class GroupIdentifier(groupName: Identifier, ref: AgentIdentifier)
   *
   */
 
-class  GreenTeaComponentIdentifier extends SyncIdentifier
+class GreenTeaComponentIdentifier extends SyncIdentifier
 
-case class ComponentIdentifier(id : String)  extends GreenTeaComponentIdentifier
+case class ComponentIdentifier(id: String) extends GreenTeaComponentIdentifier
 
 case class ProtocolIdentifier() extends GreenTeaComponentIdentifier
 
-case class  CommandIdentifier() extends GreenTeaComponentIdentifier
+case class CommandIdentifier() extends GreenTeaComponentIdentifier
 
 /* */
 

@@ -1,45 +1,52 @@
-   /**
+/**
 GreenTea Language
 Copyright 2013 Sylvain Ductor
-  **/
+  * */
 /**
-This file is part of GreenTea.
+This file is part of GreenTeaObject.
 
-GreenTea is free software: you can redistribute it and/or modify
+GreenTeaObject is free software: you can redistribute it and/or modify
 it under the terms of the Lesser GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-GreenTea is distributed in the hope that it will be useful,
+GreenTeaObject is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
 
 You should have received a copy of the Lesser GNU General Public License
-along with GreenTea.  If not, see <http://www.gnu.org/licenses/>.
-  **/
+along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
+  * */
 
-   import commands.Protocols
-   import dima.commands._
-   import dima.state.State
-   import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
 
 package object dima {
 
-  import commands._
+  /* AKKA ALIASES */
 
+  type Identifier = GreenTeaObject
+
+  /* GREENTEA ALIASES */
+
+  type Reactivity = GreenTeaObject   //berk
+
+
+  type Protocols = Set[Reactivity]      //berk
+
+  /* GreenTea Implem */
   /* */
 
-  trait GreenTea
+  trait GreenTeaObject
     extends Cloneable with Serializable
 
 
   /* */
 
   trait GreenTeaArtefact[Id <: ArtefactIdentifier]
-    extends GreenTeaSeed  with Reactivity with Protocols with Identification[Id] {
+    extends GreenTeaSeed with Reactivity with Protocols with Identification[Id] {
 
-    protected[dima] implicit val agent : Agent[State]
+    protected[dima] implicit val agent: GreenTeaAgent[State]
 
   }
 
@@ -47,21 +54,21 @@ package object dima {
   /* */
 
 
-  trait GreenTeaSeed extends GreenTea {
+  trait GreenTeaSeed extends GreenTeaObject {
 
-    protected[dima] implicit val agent : Agent[State]
+    protected[dima] implicit val agent: GreenTeaAgent[State]
 
-    import dima.commands.Speech._
+//    import dima.commands.Speech._
 
-    }
+  }
 
   /* */
 
   trait GreenTeaOption
-    extends GreenTea
+    extends GreenTeaObject
 
   trait GreenTeaCommand[GreenTeaOption]
-    extends GreenTeaArtefact[CommandIdentifier]
+    extends GreenTeaSeed  with Identification[CommandIdentifier]
 
 
   /** * Private identifieir
@@ -76,7 +83,7 @@ package object dima {
    */
 
 
-       type ACLOption = MessageOption
+  //type ACLOption = PerformativeOption
 
   /** *****
     * State
@@ -88,7 +95,7 @@ package object dima {
     *
     *
     */
- // type State = {val yo : Int}//knowledge.Source[State]
+  // type State = {val yo : Int}//knowledge.Source[State]
   // extends GreenTeaArtefact[StateIdentifier]
 
   class State
@@ -104,11 +111,8 @@ package object dima {
 
   implicit def stringToAgentIdentifier(s: String): AgentIdentifier = new AgentIdentifier(s);
 
-  type Agent[+S <: State]
-  = GreenTeaSeed with Identification[AgentIdentifier]
-    with GreenTeaComponent[S]
-    with knowledge.Source[GreenTeaComponent[S]]
-    with knowledge.Source[S] {
+  type GreenTeaAgent[S <: State]
+  = GreenTeaComponent[S] {
 
 
     /* */
@@ -116,17 +120,17 @@ package object dima {
     val id: AgentIdentifier
 
     /* */
-    type  MyStateType = S
+    type MyStateType = S
     val state: S
 
 
     /* */
 
-    def send(m: ASyncMessage)
+    def send[O <: PerformativeOption](m: ASyncPerformative[O])
 
     /* */
 
-    def order[R](m: SyncMessage[R]): R
+    def order[O <: PerformativeOption,R](m: SyncPerformative[O,R]): R
 
     /* */
 
@@ -137,7 +141,18 @@ package object dima {
     val mySage: sage.GreenTeaSage
 
   }
-    /** * **
+
+
+  /*
+ type Configuration[Type] = {
+
+   val agent: Agent[State]
+
+   def apply(): Type
+
+ }
+    */
+  /** * **
     * Artefact
     *
     *
@@ -147,7 +162,6 @@ package object dima {
     */
 
   object clock {
-
 
     type Ticker = {
 
@@ -162,7 +176,7 @@ package object dima {
 
     type HookTest = Unit => Boolean
 
-    trait Hook extends dima.GreenTea {
+    trait Hook extends dima.GreenTeaObject {
 
       var isHooked: Boolean = false
 
@@ -170,7 +184,7 @@ package object dima {
 
       def reactivate(): Boolean = {
         if (isHooked) {
-          isHooked = test ()
+          isHooked = test()
         }
         isHooked
       }
@@ -179,6 +193,7 @@ package object dima {
   }
 
   object knowledge {
+
 
     type Information = Serializable with Cloneable {
 
@@ -203,24 +218,17 @@ package object dima {
     /** * **
       * Query et Info
       */
-    trait Query extends GreenTea {
+    trait Query extends GreenTeaObject {
 
       val referee: Identifier
 
     }
-  }
-
-
-
-  type Configuration[Type] = {
-
-    val agent: Agent[State]
-
-    def apply(): Type
 
   }
+
 
   object sage {
+
 
     type GreenTeaThrowable
     = Throwable with clock.Hook
@@ -266,13 +274,56 @@ package object dima {
 
     type MessageTrace = GreenTeaThrowable
 
-    class ExceptionOption extends dima.GreenTeaOption
+    class ExceptionOption extends dima.PerformativeOption
+    class LogOption extends dima.PerformativeOption
 
-    class ExceptionMessage(val ex: Exception)(implicit val cause: String)
-      extends Message with Performative[ExceptionOption]
+    abstract class ExceptionMessage(implicit val ex: Exception, val cause: String)
+      extends Performative[ExceptionOption]
 
-    class LogMessage extends  Message with Performative[SyncMessageOption]
+    abstract class LogMessage extends Performative[LogOption]
 
 
   }
+
+
+  object returns {
+
+    /*
+     * Return Types
+     */
+    class Return extends GreenTeaObject
+
+    /*
+    Initialization  activities
+    */
+
+    class Initialization extends Return
+
+    case class initialized() extends Initialization
+
+    case class notInitialized() extends Initialization
+
+    //implicit defs : boolean =| initialisationtype
+
+    /*
+     Proactive activities termination
+     */
+
+    class Activation extends Return
+
+    case class continue() extends Activation
+
+    case class stop() extends Activation
+
+    case class interruptProactivity(hook: clock.Hook) extends Activation
+
+    case class interruptComponent(hook: clock.Hook) extends Activation
+
+  }
+
+
+  /* Acquaintances */
+
+
+  class AcquaintanceOption extends GreenTeaOption
 }
