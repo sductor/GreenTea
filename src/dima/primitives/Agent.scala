@@ -6,6 +6,6 @@ package dima.primitives
  * Licensed under Lesser GNU Public General Licence (LGPL)
  * Author : Sylvain Ductor
  */
-class ScalaAgent {
+class Agent {
 
 }

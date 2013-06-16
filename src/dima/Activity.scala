@@ -87,7 +87,7 @@ sealed abstract class Activity[+Options <: ActivityOption]
    */
   def apply(mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): ActivityReturn = (options, action) match {
     case (Some(o), Some(a)) => {
-      if (o(mailbox, knowledge)) {
+      if (o(state,mailbox, knowledge)) {
         try {
           return a(getParameters(mailbox, knowledge))
         } catch {
@@ -109,9 +109,16 @@ sealed abstract class Activity[+Options <: ActivityOption]
 
   /* Comparison */
 
-  val precedence: Int
+  /* statically imposed by the dima command */
+  protected[dima] val systemPrecedence: Int
 
-  def compareTo(that: Activity[ActivityOption]): Int = this.precedence.compareTo(that.precedence)
+  /* user overridable value that will  order activities under the  same dima command */
+  val precedence: Int   = 0
+
+  def compareTo(that: Activity[ActivityOption]): Int =this.systemPrecedence.compareTo(that.systemPrecedence) match {
+    case 0  => this.precedence.compareTo(that.precedence)
+    case _ => _
+  }
 }
 
 /* Activity Commands that returns a initialization staus  (initialized / notInitialized)*/
@@ -148,7 +155,7 @@ trait ActivityOption extends GreenTeaOption {
    * @param mailbox: List[Performative[PerformativeOption], knowledge: knowledge.KnowledgeBase : the parameters that are to give to the action
    * @return  : wether this actual parameter are valide w.r.t to the option
    */
-  def apply(mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): Boolean
+  def apply(state : State, mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): Boolean
 }
 
 
