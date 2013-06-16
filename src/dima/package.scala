@@ -29,10 +29,12 @@ package object dima {
 
   /* GREENTEA ALIASES */
 
-  type Reactivity = GreenTeaObject   //berk
+  type Reactivity = GreenTeaObject //berk
 
 
-  type Protocols = Set[Reactivity]      //berk
+  type Protocols = Set[Reactivity]
+
+  //berk
 
   /* GreenTea Implem */
   /* */
@@ -41,7 +43,7 @@ package object dima {
     extends Cloneable with Serializable
 
 
-  /* */
+  /*
 
   trait GreenTeaArtefact[Id <: ArtefactIdentifier]
     extends GreenTeaSeed with Reactivity with Protocols with Identification[Id] {
@@ -49,16 +51,18 @@ package object dima {
     protected[dima] implicit val agent: GreenTeaAgent[State]
 
   }
-
+  */
 
   /* */
 
 
   trait GreenTeaSeed extends GreenTeaObject {
 
-    protected[dima] implicit val agent: GreenTeaAgent[State]
+    type AgentState <: State
 
-//    import dima.commands.Speech._
+    protected[dima] implicit val agent: GreenTeaAgent[AgentState]
+
+    //    import dima.commands.Speech._
 
   }
 
@@ -67,8 +71,8 @@ package object dima {
   trait GreenTeaOption
     extends GreenTeaObject
 
-  trait GreenTeaCommand[GreenTeaOption]
-    extends GreenTeaSeed  with Identification[CommandIdentifier]
+  trait GreenTeaCommand[+GreenTeaOption]
+    extends GreenTeaSeed with Identification[CommandIdentifier]
 
 
   /** * Private identifieir
@@ -111,8 +115,7 @@ package object dima {
 
   implicit def stringToAgentIdentifier(s: String): AgentIdentifier = new AgentIdentifier(s);
 
-  type GreenTeaAgent[S <: State]
-  = GreenTeaComponent[S] {
+  type GreenTeaAgent[S <: State] = {
 
 
     /* */
@@ -130,7 +133,7 @@ package object dima {
 
     /* */
 
-    def order[O <: PerformativeOption,R](m: SyncPerformative[O,R]): R
+    def order[O <: PerformativeOption, R](m: SyncPerformative[O, R]): R
 
     /* */
 
@@ -168,7 +171,7 @@ package object dima {
       def isActivated
     }
 
-    type GreenTeaClock = dima.GreenTeaArtefact[ClockIdentifier] {
+    type GreenTeaClock = dima.GreenTeaObject {
 
       val intialDate: java.util.Date
     }
@@ -182,7 +185,7 @@ package object dima {
 
       def test: HookTest
 
-      def reactivate(): Boolean = {
+      def isReactivated(): Boolean = {
         if (isHooked) {
           isHooked = test()
         }
@@ -203,7 +206,7 @@ package object dima {
 
     type Knowledge = List[Information]
 
-    type Source[I <: Information] = GreenTeaArtefact[SourceIdentifier] {
+    type Source[I <: Information] = GreenTeaObject with Identification[SourceIdentifier] {
 
       //val sources : Set[I]
 
@@ -228,7 +231,7 @@ package object dima {
 
 
   object sage {
-
+    //http://tersesystems.com/2012/12/27/error-handling-in-scala
 
     type GreenTeaThrowable
     = Throwable with clock.Hook
@@ -275,6 +278,7 @@ package object dima {
     type MessageTrace = GreenTeaThrowable
 
     class ExceptionOption extends dima.PerformativeOption
+
     class LogOption extends dima.PerformativeOption
 
     abstract class ExceptionMessage(implicit val ex: Exception, val cause: String)
@@ -293,11 +297,21 @@ package object dima {
      */
     class Return extends GreenTeaObject
 
+    case class interrupted() extends Return with Initialization with Activation with Termination {
+      var hook: clock.Hook = _
+    }
+
+    def interrupt(hook: clock.Hook): interrupted = {
+      val i = new interrupted ()
+      i.hook = hook
+      i
+    }
+
     /*
     Initialization  activities
     */
 
-    class Initialization extends Return
+    trait Initialization extends Return
 
     case class initialized() extends Initialization
 
@@ -306,18 +320,25 @@ package object dima {
     //implicit defs : boolean =| initialisationtype
 
     /*
-     Proactive activities termination
+     Proactive activities
      */
 
-    class Activation extends Return
+    trait Activation extends Return
 
     case class continue() extends Activation
 
     case class stop() extends Activation
 
-    case class interruptProactivity(hook: clock.Hook) extends Activation
+    /*
+     Proactive activities termination
+     */
 
-    case class interruptComponent(hook: clock.Hook) extends Activation
+    trait Termination extends Return
+
+    case class terminate() extends Termination
+
+    case class notYet() extends Termination
+
 
   }
 
@@ -326,4 +347,5 @@ package object dima {
 
 
   class AcquaintanceOption extends GreenTeaOption
+
 }

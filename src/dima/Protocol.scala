@@ -26,13 +26,13 @@ import dima._
 trait Role extends State
 
 //class Role[State]
-class Protocol(referee: GreenTeaAgent[State])
+/*class Protocol(referee: GreenTeaAgent[State])
   extends GreenTeaSeed {
 
   implicit val agent = referee
-}
+} */
 
-trait ProtocolCore[S <: State] extends GreenTeaComponent[S]
+//trait ProtocolCore[S <: State] extends GreenTeaComponent[S]
 
 
 /*

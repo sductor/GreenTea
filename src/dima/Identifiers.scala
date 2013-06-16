@@ -29,7 +29,7 @@ import knowledge._
  */
 // extends GreenTeaObject {
 
-  //val canonicalId: String
+//val canonicalId: String
 //}
 
 
@@ -49,7 +49,7 @@ abstract class AsyncIdentifier() extends Identifier
  */
 
 case class PrivateIdentifier[O <: GreenTeaObject with Identification[Identifier]](val o: O)
-                                                                           (implicit val key: Key, dice: Random)
+                                                                                 (implicit val key: Key, dice: Random)
   extends SyncIdentifier {
 
   //val canonicalId: String = o.id.canonicalId

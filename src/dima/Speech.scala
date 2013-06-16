@@ -27,10 +27,10 @@ import sage._
 
 class MessageContent extends GreenTeaObject
 
-trait Performative [O <: PerformativeOption]
+trait Performative[O <: PerformativeOption]
   extends GreenTeaCommand[MessageIdentifier] {
 
- // type O <: PerformativeOption
+  // type O <: PerformativeOption
 
   type C <: MessageContent
 
@@ -82,7 +82,7 @@ abstract class ASyncPerformativeWithReturn[O <: PerformativeOption, ReturnType <
 abstract class SyncPerformative[O <: PerformativeOption, ReturnType <: Any]()
   extends Performative[O] {
 
-  def apply(implicit agent: GreenTeaAgent[State]) : ReturnType = {
+  def apply(implicit agent: GreenTeaAgent[State]): ReturnType = {
     agent.order(this)
   }
 
