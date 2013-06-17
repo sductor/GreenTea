@@ -18,10 +18,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
-package dima
+package dima.speech
 
-import returns._
-import sage._
+import dima._
+import dima.returns._
+import dima.sage._
 
 /* Messages */
 

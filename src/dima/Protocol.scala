@@ -22,35 +22,21 @@ along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
 package dima
 
 import dima._
+import scala.collection.mutable
 
 trait Role extends State
 
-//class Role[State]
-/*class Protocol(referee: GreenTeaAgent[State])
-  extends GreenTeaSeed {
+abstract class Conversation extends GreenTeaObject with Identification[ConversationIdentifier] with mutable.MultiMap[Role,AgentIdentifier]
 
-  implicit val agent = referee
-} */
+abstract class Protocol(val rolesPlayed : List[Role])  extends GreenTeaSeed with Identification[ProtocolIdentifier]{
 
-//trait ProtocolCore[S <: State] extends GreenTeaComponent[S]
+  import commands.protocols._
 
-
-/*
+ def startConversation(acq : GroupIdentifier) : Conversation
 
 
-import dima.Role
-import dima.{Role, ConversationIdentifier}
+}
 
-class Protocol[State] extends greentea.GreenTeaComponent {
-
-def id : ProtocolIdentifier
-
-def play(rolesPlayed : List[Role[State]]) : Option[ConversationIdentifier]
-
-
-
-
-}       */
 
 
 

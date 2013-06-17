@@ -19,9 +19,11 @@ You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
 
-package dima
+package dima.activity
 
-import returns._
+import dima._
+import dima.returns._
+import dima.speech._
 import scala.collection.mutable._
 import dima.knowledge.KnowledgeBase
 
@@ -82,8 +84,9 @@ sealed abstract class Activity[+Options <: ActivityOption]
 
   /**
    * Used to execute the method
-   * @param mailbox: List[Performative[PerformativeOption]], knowledge: knowledge.KnowledgeBase : the agent current external state
-   * @return  : the new activty status of this activity
+   * @param mailbox: List[Performative[PerformativeOption]]
+   * @param  knowledge            knowledge: knowledge.KnowledgeBase : the agent current external state
+   *@return  : the new activty status of this activity
    */
   def apply(mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): ActivityReturn = (options, action) match {
     case (Some(o), Some(a)) => {
@@ -91,14 +94,14 @@ sealed abstract class Activity[+Options <: ActivityOption]
         try {
           return a(getParameters(mailbox, knowledge))
         } catch {
-          case e: Throwable => throw e //  agent.mySage.execution(new ExceptionMessage(ex, this))
+          case e: Throwable => throw e //  agent.mySage.execution(new ExceptionPerformative(ex, this))
         }
       } else {
         defaultReturn
       }
     }
 
-    case _ => throw new RuntimeException //agent.mySage.syntax(new ExceptionMessage(null,this))
+    case _ => throw new RuntimeException //agent.mySage.syntax(new ExceptionPerformative(null,this))
   }
 
   /**
@@ -117,7 +120,7 @@ sealed abstract class Activity[+Options <: ActivityOption]
 
   def compareTo(that: Activity[ActivityOption]): Int =this.systemPrecedence.compareTo(that.systemPrecedence) match {
     case 0  => this.precedence.compareTo(that.precedence)
-    case _ => _
+    case i => i
   }
 }
 
@@ -168,6 +171,10 @@ trait ActivityOption extends GreenTeaOption {
  */
 abstract class ProactivityComponent[S <: State]
   extends GreenTeaSeed with Identification[AgentIdentifier] {
+
+  import commands.activities._
+  import commands.performatives._
+
 
   /* def get et update val state: S = agent.state*/
 

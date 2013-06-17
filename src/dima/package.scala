@@ -19,6 +19,8 @@ You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
 
+import dima.activity.ProactivityComponent
+import dima.speech._
 import scala.collection.mutable.ListBuffer
 
 package object dima {
@@ -115,7 +117,8 @@ package object dima {
 
   implicit def stringToAgentIdentifier(s: String): AgentIdentifier = new AgentIdentifier(s);
 
-  type GreenTeaAgent[S <: State] = {
+  type GreenTeaAgent[S <: State] = ProactivityComponent[S]{
+
 
 
     /* */
@@ -252,23 +255,23 @@ package object dima {
       /*
       Method executed if a syntax error is detected
        */
-      def syntax(gt: ExceptionMessage)
+      def syntax(gt: ExceptionPerformative)
 
       /*
       Method executed if an execution error is detected
        */
-      def execution(gt: ExceptionMessage)
+      def execution(gt: ExceptionPerformative)
 
       /*
       Method executed if a protocol error is detected
        */
-      def communication(em: ExceptionMessage)
+      def communication(em: ExceptionPerformative)
 
       /*
 
        */
 
-      def log(lm: LogMessage)
+      def log(lm: LogPerformative)
     }
 
     /*
@@ -277,14 +280,14 @@ package object dima {
 
     type MessageTrace = GreenTeaThrowable
 
-    class ExceptionOption extends dima.PerformativeOption
+    class ExceptionOption extends dima.speech.PerformativeOption
 
-    class LogOption extends dima.PerformativeOption
+    class LogOption extends dima.speech.PerformativeOption
 
-    abstract class ExceptionMessage(implicit val ex: Exception, val cause: String)
+    abstract class ExceptionPerformative( val ex: Exception, val cause: String)
       extends Performative[ExceptionOption]
 
-    abstract class LogMessage extends Performative[LogOption]
+    abstract class LogPerformative extends Performative[LogOption]
 
 
   }
@@ -343,9 +346,11 @@ package object dima {
   }
 
 
-  /* Acquaintances */
+  object acquaintances {
 
 
-  class AcquaintanceOption extends GreenTeaOption
+    class AcquaintanceOption extends PerformativeOption
 
+    //ajout de handleOf de acquaintances
+  }
 }

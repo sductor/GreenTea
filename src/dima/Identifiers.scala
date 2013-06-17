@@ -41,7 +41,13 @@ trait Identification[I <: Identifier] {
 
 abstract class SyncIdentifier() extends Identifier
 
-abstract class AsyncIdentifier() extends Identifier
+class GreenTeaComponentIdentifier extends SyncIdentifier
+
+case class ComponentIdentifier(id: String) extends GreenTeaComponentIdentifier
+
+case class ProtocolIdentifier() extends GreenTeaComponentIdentifier
+
+case class CommandIdentifier() extends GreenTeaComponentIdentifier
 
 /**
  * Localdentifier is the most general agent identifier
@@ -54,6 +60,13 @@ case class PrivateIdentifier[O <: GreenTeaObject with Identification[Identifier]
 
   //val canonicalId: String = o.id.canonicalId
 }
+
+
+
+
+
+abstract class AsyncIdentifier() extends Identifier
+
 
 /**
  * An identifier associated to a unique string
@@ -94,7 +107,7 @@ class AgentIdentifier(val name: Identifier)
   * @param groupName
   * @param
   */
-case class GroupIdentifier(val groupName: Identifier, var groupReferee: AgentIdentifier)
+class GroupIdentifier(val groupName: Identifier, var groupReferee: AgentIdentifier)
   extends AgentIdentifier(groupName) with Set[AgentIdentifier] with Query {
 
   val referee: AgentIdentifier = this
@@ -114,13 +127,6 @@ case class GroupIdentifier(val groupName: Identifier, var groupReferee: AgentIde
   *
   */
 
-class GreenTeaComponentIdentifier extends SyncIdentifier
-
-case class ComponentIdentifier(id: String) extends GreenTeaComponentIdentifier
-
-case class ProtocolIdentifier() extends GreenTeaComponentIdentifier
-
-case class CommandIdentifier() extends GreenTeaComponentIdentifier
 
 /* */
 
