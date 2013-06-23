@@ -29,7 +29,9 @@ import dima.sage._
 class MessageContent extends GreenTeaObject
 
 trait Performative[O <: PerformativeOption]
-  extends GreenTeaCommand[MessageIdentifier] {
+  extends GreenTeaCommand {
+
+  val id : MessageIdentifier
 
   // type O <: PerformativeOption
 
@@ -49,7 +51,7 @@ trait Performative[O <: PerformativeOption]
 
 }
 
-class PerformativeOption extends GreenTeaOption
+abstract class PerformativeOption extends GreenTeaOption
 
 
 /* */
@@ -63,34 +65,25 @@ abstract class ASyncPerformative[O <: PerformativeOption]()
   val receivers: List[Identifier]
   /* a mettre dans asyncperf option */
 
-  def apply(agent: GreenTeaAgent[State]) = {
+  def apply() = {
     agent.send(this)
   }
 
   /* Syntaxic sugar */
-  def send(agent: GreenTeaAgent[State]) = {
-    apply(agent: GreenTeaAgent[State])
-  }
+  def send() = apply()
 }
-
-/* */
-
-abstract class ASyncPerformativeWithReturn[O <: PerformativeOption, ReturnType <: Any]()
-  extends ASyncPerformative[O]
 
 /* */
 
 abstract class SyncPerformative[O <: PerformativeOption, ReturnType <: Any]()
   extends Performative[O] {
 
-  def apply(implicit agent: GreenTeaAgent[State]): ReturnType = {
+  def apply(): ReturnType = {
     agent.order(this)
   }
 
   /* Syntaxic sugar */
-  def execute(agent: GreenTeaAgent[State]) = {
-    apply(agent: GreenTeaAgent[State])
-  }
+  def execute() = apply()
 
 }
 

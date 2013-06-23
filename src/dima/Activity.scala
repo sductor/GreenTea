@@ -26,6 +26,43 @@ import dima.returns._
 import dima.speech._
 import scala.collection.mutable._
 import dima.knowledge.KnowledgeBase
+import scala._
+import dima.returns.notInitialized
+import dima.returns.stop
+import dima.returns.notYet
+import dima.returns.initialized
+import dima.returns.interrupted
+import dima.returns.terminate
+import dima.returns.continue
+import dima.returns.notInitialized
+import dima.returns.stop
+import dima.returns.notYet
+import dima.returns.initialized
+import dima.returns.interrupted
+import dima.returns.terminate
+import dima.ComponentIdentifier
+import dima.CommandIdentifier
+import dima.returns.continue
+import dima.returns.notInitialized
+import dima.returns.stop
+import scala.Some
+import dima.returns.notYet
+import dima.returns.initialized
+import dima.returns.interrupted
+import dima.returns.terminate
+import dima.ComponentIdentifier
+import dima.CommandIdentifier
+import dima.returns.continue
+import dima.returns.notInitialized
+import dima.returns.stop
+import scala.Some
+import dima.returns.notYet
+import dima.returns.initialized
+import dima.returns.interrupted
+import dima.returns.terminate
+import dima.ComponentIdentifier
+import dima.CommandIdentifier
+import dima.returns.continue
 
 /**
  *
@@ -38,20 +75,16 @@ import dima.knowledge.KnowledgeBase
  * This action is a function of type ActivityAction whose parameters and return type are defined by the options.
  * precedence is used by the comparator to sort the different activities
  */
-sealed abstract class Activity[+Options <: ActivityOption]
-  extends GreenTeaCommand[Options] with Comparable[Activity[ActivityOption]] {
+abstract class Activity[+R <: Return](protected[dima] val agent: GreenTeaAgent,
+                                      protected[dima] val component: ProactivityComponent)
+  extends GreenTeaCommand with Comparable[Activity[Return]] {
+
+  val id: CommandIdentifier = component.newCommandId
 
   /* State reference */
 
-  type S <: State
-  type StateStatus <: Any
-
-  val state: S = component.getState()
+  type StateStatus
   val currentStatus: Option[StateStatus] = None
-
-  /*  Component reference */
-
-  protected[dima] var component: ProactivityComponent[S]
 
 
   /* Activity Definition */
@@ -59,14 +92,23 @@ sealed abstract class Activity[+Options <: ActivityOption]
   type ActivityReturn <: Return
   type ActivityParameters
   type ActivityAction = ActivityParameters => ActivityReturn
+  type OptionObject <: ActivityOption
 
-  protected[dima] var options: Option[ActivityOption] = None
+
   protected[dima] var action: Option[ActivityAction] = None
 
-  /* */
+
+  /* Return */
+
+  implicit var r: R = _
 
   //continue si ActivityReturn de type Activation et notInitialized si de type Initialisation
-  protected[dima] def defaultReturn: ActivityReturn
+  protected[dima] def defaultReturn: ActivityReturn = r match {
+    case a: Initialization => notInitialized()
+    case a: Execution => continue()
+    case a: Termination => terminate()
+  }
+
 
   implicit def defaultReturn(a: Any): ActivityReturn = defaultReturn
 
@@ -86,11 +128,13 @@ sealed abstract class Activity[+Options <: ActivityOption]
    * Used to execute the method
    * @param mailbox: List[Performative[PerformativeOption]]
    * @param  knowledge            knowledge: knowledge.KnowledgeBase : the agent current external state
-   *@return  : the new activty status of this activity
+   * @return  : the new activty status of this activity
    */
   def apply(mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): ActivityReturn = (options, action) match {
+
     case (Some(o), Some(a)) => {
-      if (o(state,mailbox, knowledge)) {
+      val p = new ActivityOptionParameters(state(), mailbox, knowledge)
+      if (o(p)) {
         try {
           return a(getParameters(mailbox, knowledge))
         } catch {
@@ -108,7 +152,8 @@ sealed abstract class Activity[+Options <: ActivityOption]
    * Convert the mailbox and the knowledge into this specific activity parameter and execute "execute" function
    * @param mailbox
    */
-  def getParameters(mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): ActivityParameters
+  def getParameters(mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): this.ActivityParameters
+
 
   /* Comparison */
 
@@ -116,49 +161,33 @@ sealed abstract class Activity[+Options <: ActivityOption]
   protected[dima] val systemPrecedence: Int
 
   /* user overridable value that will  order activities under the  same dima command */
-  val precedence: Int   = 0
+  val precedence: Int = 0
 
-  def compareTo(that: Activity[ActivityOption]): Int =this.systemPrecedence.compareTo(that.systemPrecedence) match {
-    case 0  => this.precedence.compareTo(that.precedence)
+  def compareTo[R <: Return](that: Activity[R]): Int = this.systemPrecedence.compareTo(that.systemPrecedence) match {
+    case 0 => this.precedence.compareTo(that.precedence)
     case i => i
   }
-}
-
-/* Activity Commands that returns a initialization staus  (initialized / notInitialized)*/
-abstract case class InitialisationActivity[Opt <: ActivityOption]() extends Activity[Opt] {
-
-  type ActivityReturn = Initialization
-
-  def defaultReturn = notInitialized()
 
 }
 
-/* Activity Commands that returns a activation status (continue / interrupt(h : Hook) / stop()) */
-abstract case class ExecutionActivity[Opt <: ActivityOption]() extends Activity[Opt] {
-
-  type ActivityReturn = Activation
-
-  def defaultReturn = continue()
-
-}
-
-/* Activity Commands that returns a initialization staus  (initialized / notInitialized)*/
-abstract case class TerminationActivity[Opt <: ActivityOption]() extends Activity[Opt] {
-
-  type ActivityReturn = Termination
-
-  def defaultReturn = terminate()
-
-}
+class ActivityOptionParameters(s: State, mails: List[Performative[PerformativeOption]], k: dima.knowledge.KnowledgeBase)
 
 /* Subtype for option used for activity commands */
-trait ActivityOption extends GreenTeaOption {
+class ActivityOption extends GreenTeaOption {
 
   /**
    * @param mailbox: List[Performative[PerformativeOption], knowledge: knowledge.KnowledgeBase : the parameters that are to give to the action
    * @return  : wether this actual parameter are valide w.r.t to the option
    */
-  def apply(state : State, mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): Boolean
+  type OptionParameters = ActivityOptionParameters
+
+
+  /**
+   * State wether the action is executable with the provided option parameters
+   * @param op
+   * @return
+   */
+  def apply(op: ActivityOptionParameters): Boolean = ???
 }
 
 
@@ -169,60 +198,63 @@ trait ActivityOption extends GreenTeaOption {
  * It is implemented as a meta trait since
  *
  */
-abstract class ProactivityComponent[S <: State]
+class ProactivityComponent(implicit protected[dima] val agent: GreenTeaAgent)
   extends GreenTeaSeed with Identification[AgentIdentifier] {
 
-  import commands.activities._
-  import commands.performatives._
+  import dima.commands.activities._
+  import dima.commands.performatives._
 
+
+  val id: AgentIdentifier = agent.id
 
   /* def get et update val state: S = agent.state*/
 
   def componentId: ComponentIdentifier = new ComponentIdentifier(this.getClass().toString())
 
-  type AgentState = S
+  var commandId: Int = 0
 
-  def getState(): S = agent.state
+  def newCommandId = new CommandIdentifier(componentId + "#CommandNumber#" + commandId);
+  commandId += 1;
 
   /*
   Execution Status of this component  (handled by the agent state)
    */
   var isInitialized: Initialization = notInitialized()
-  var isActive: Activation = continue()
+  var isActive: Execution = continue()
 
   /*
   Activities of this component
    */
 
-  val activeInitialisationMethods: ListBuffer[InitialisationActivity[ActivityOption]] = new ListBuffer[InitialisationActivity[ActivityOption]]
-  val activeActivityMethods: ListBuffer[ExecutionActivity[ActivityOption]] = new ListBuffer[ExecutionActivity[ActivityOption]]
-  val activeTerminationMethods: ListBuffer[TerminationActivity[ActivityOption]] = new ListBuffer[TerminationActivity[ActivityOption]]
+  val activeInitialisationMethods: ListBuffer[Activity[Initialization]] = new ListBuffer[Activity[Initialization]]
+  val activeActivityMethods: ListBuffer[Activity[Execution]] = new ListBuffer[Activity[Execution]]
+  val activeTerminationMethods: ListBuffer[Activity[Termination]] = new ListBuffer[Activity[Termination]]
 
   /* */
 
-  val hookedMethods: ListBuffer[(clock.Hook, Activity[ActivityOption])] = new ListBuffer[(clock.Hook, Activity[ActivityOption])]
-  val stoppedMethods: ListBuffer[Activity[ActivityOption]] = new ListBuffer[Activity[ActivityOption]]
+  val hookedMethods: ListBuffer[(clock.Hook, Activity[Return])] = new ListBuffer[(clock.Hook, Activity[Return])]
+  val stoppedMethods: ListBuffer[Activity[Return]] = new ListBuffer[Activity[Return]]
 
-  protected[dima] def +(act: Activity[ActivityOption]) = act match {
-    case a: InitialisationActivity[ActivityOption] => activeInitialisationMethods += a
-    case a: ExecutionActivity[ActivityOption] => activeActivityMethods += a
-    case a: TerminationActivity[ActivityOption] => activeTerminationMethods += a
+  protected[dima] def +[R <: Return](act: Activity[R]) = act match {
+    case a: Activity[Initialization] => activeInitialisationMethods += a
+    case a: Activity[Execution] => activeActivityMethods += a
+    case a: Activity[Termination] => activeTerminationMethods += a
   }
 
 
-  protected[dima] def -(act: Activity[ActivityOption]) = act match {
-    case a: InitialisationActivity[ActivityOption] => activeInitialisationMethods -= a; stoppedMethods += a
-    case a: ExecutionActivity[ActivityOption] => activeActivityMethods -= a; stoppedMethods += a
-    case a: TerminationActivity[ActivityOption] => activeTerminationMethods -= a; stoppedMethods += a
+  protected[dima] def -[R <: Return](act: Activity[R]) = act match {
+    case a: Activity[Initialization] => activeInitialisationMethods -= a; stoppedMethods += a
+    case a: Activity[Execution] => activeActivityMethods -= a; stoppedMethods += a
+    case a: Activity[Termination] => activeTerminationMethods -= a; stoppedMethods += a
   }
 
 
-  protected[dima] def ~(act: Activity[ActivityOption], h: interrupted) = {
+  protected[dima] def ~[R <: Return](act: Activity[R], h: interrupted) = {
     val m = (h.hook, act)
     act match {
-      case a: InitialisationActivity[ActivityOption] => activeInitialisationMethods -= a; hookedMethods += m
-      case a: ExecutionActivity[ActivityOption] => activeActivityMethods -= a; hookedMethods += m
-      case a: TerminationActivity[ActivityOption] => activeTerminationMethods -= a; hookedMethods += m
+      case a: Activity[Initialization] => activeInitialisationMethods -= a; hookedMethods += m
+      case a: Activity[Execution] => activeActivityMethods -= a; hookedMethods += m
+      case a: Activity[Termination] => activeTerminationMethods -= a; hookedMethods += m
     }
   }
 
@@ -308,12 +340,12 @@ abstract class ProactivityComponent[S <: State]
   Those methods allow to indivually control each activity
   */
 
-  def interruptActivity(proact: Activity[ActivityOption], hook: clock.Hook) =
+  def interruptActivity[R <: Return](proact: Activity[R], hook: clock.Hook) =
     this ~(proact, returns.interrupt(hook))
 
-  def stopActivity(proact: Activity[ActivityOption]) = this - proact
+  def stopActivity[R <: Return](proact: Activity[R]) = this - proact
 
-  def reactivateActivity(proact: Activity[ActivityOption]) = this + proact
+  def reactivateActivity[R <: Return](proact: Activity[R]) = this + proact
 
 }
 

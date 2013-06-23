@@ -20,6 +20,7 @@ along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
 
 import dima.activity.ProactivityComponent
+import dima.Identification
 import dima.speech._
 import scala.collection.mutable.ListBuffer
 
@@ -28,6 +29,10 @@ package object dima {
   /* AKKA ALIASES */
 
   type Identifier = GreenTeaObject
+
+  class SimpleIdentifier(s: String) extends GreenTeaObject
+
+  implicit def stringToIDentifier(s: String): Identifier = new SimpleIdentifier(s)
 
   /* GREENTEA ALIASES */
 
@@ -57,24 +62,52 @@ package object dima {
 
   /* */
 
-
   trait GreenTeaSeed extends GreenTeaObject {
 
-    type AgentState <: State
+    protected[dima] val agent: GreenTeaAgent
 
-    protected[dima] implicit val agent: GreenTeaAgent[AgentState]
+    def state(): agent.MyStateType = agent.state
 
-    //    import dima.commands.Speech._
+    def updateState(newState: agent.MyStateType) = agent.update(newState)
+
+    import dima.commands.performatives._
 
   }
 
+
+  /* */
+  /**
+   * The following classes allow the use of commands with extensible options
+   * Each command is endowed with an object that contains all the optionnal fields that can be added
+   * It is associated to a current AvailableOptions that allow to identify which option can still be used
+   */
+
   /* */
 
-  trait GreenTeaOption
-    extends GreenTeaObject
+  trait GreenTeaCommand
+    extends GreenTeaSeed with Identification[CommandIdentifier] {
 
-  trait GreenTeaCommand[+GreenTeaOption]
-    extends GreenTeaSeed with Identification[CommandIdentifier]
+    type OptionObject <: GreenTeaOption
+
+    protected[dima] var options: Option[OptionObject] = None
+  }
+
+
+  trait GreenTeaOption extends GreenTeaObject {
+
+    type OptionParameters
+
+    /**
+     * State wether the action is executable with the provided option parameters
+     * @param op
+     * @return
+     */
+    def apply(op: this.OptionParameters): Boolean
+
+  }
+
+
+  trait AvailableOptions
 
 
   /** * Private identifieir
@@ -88,6 +121,9 @@ package object dima {
    * Speech
    */
 
+  type Query = GreenTeaObject
+
+  type Knowledge = GreenTeaObject
 
   //type ACLOption = PerformativeOption
 
@@ -115,32 +151,33 @@ package object dima {
     *
     */
 
-  implicit def stringToAgentIdentifier(s: String): AgentIdentifier = new AgentIdentifier(s);
+  implicit def identifierToAgentIdentifier(s: Identifier): AgentIdentifier = new AgentIdentifier(s);
 
-  type GreenTeaAgent[S <: State] = ProactivityComponent[S]{
-
-
+  trait GreenTeaAgent extends  Identification[AgentIdentifier] {
 
     /* */
 
-    val id: AgentIdentifier
+    type MyStateType <: State
+
+    var state: MyStateType
+
+    def update(newState: MyStateType): Unit
 
     /* */
-    type MyStateType = S
-    val state: S
 
+    val myClock: clock.GreenTeaClock
 
     /* */
 
     def send[O <: PerformativeOption](m: ASyncPerformative[O])
 
-    /* */
 
     def order[O <: PerformativeOption, R](m: SyncPerformative[O, R]): R
 
     /* */
 
-    val myClock: clock.GreenTeaClock
+
+    def obtainKnowledge(queries : List[Query]) : Knowledge
 
     /* */
 
@@ -280,11 +317,11 @@ package object dima {
 
     type MessageTrace = GreenTeaThrowable
 
-    class ExceptionOption extends dima.speech.PerformativeOption
+    abstract class ExceptionOption extends dima.speech.PerformativeOption
 
-    class LogOption extends dima.speech.PerformativeOption
+    abstract class LogOption extends dima.speech.PerformativeOption
 
-    abstract class ExceptionPerformative( val ex: Exception, val cause: String)
+    abstract class ExceptionPerformative(val ex: Exception, val cause: String)
       extends Performative[ExceptionOption]
 
     abstract class LogPerformative extends Performative[LogOption]
@@ -300,12 +337,12 @@ package object dima {
      */
     class Return extends GreenTeaObject
 
-    case class interrupted() extends Return with Initialization with Activation with Termination {
+    case class interrupted() extends Return with Initialization with Execution with Termination {
       var hook: clock.Hook = _
     }
 
     def interrupt(hook: clock.Hook): interrupted = {
-      val i = new interrupted ()
+      val i = new interrupted()
       i.hook = hook
       i
     }
@@ -326,11 +363,11 @@ package object dima {
      Proactive activities
      */
 
-    trait Activation extends Return
+    trait Execution extends Return
 
-    case class continue() extends Activation
+    case class continue() extends Execution
 
-    case class stop() extends Activation
+    case class stop() extends Execution
 
     /*
      Proactive activities termination
@@ -353,4 +390,5 @@ package object dima {
 
     //ajout de handleOf de acquaintances
   }
+
 }

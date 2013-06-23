@@ -18,22 +18,27 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the Lesser GNU General Public License
 along with GreenTea. If not, see <http://www.gnu.org/licenses/>.
   * */
-package commands
+package dima.commands
+
+import dima.speech.{PerformativeOption, Performative}
+import dima._
+import dima.activity.{ProactivityComponent, ActivityOption}
+import dima.primitives.nativeCommandsOptionConfiguration._
+
+/** ***
+  * activities
+  *
+  * This object contains the commands used to define and control :
+  * * the proactivty execution
+  * * the events (messages) handling
+  *
+  */
 
 object activities {
 
   import dima.activity._
   import dima.returns._
 
-
-  /** ***
-    * Proactivities
-    *
-    * This object contains the commands used to define and control :
-    * * the proactivty execution
-    * * the events (messages) handling
-    *
-    */
 
   /////////////
   // COMMANDS //
@@ -45,12 +50,30 @@ object activities {
   */
 
 
+  implicit val agent : GreenTeaAgent = null
+  implicit val component : ProactivityComponent = null
+
+  class ProactivityCommand[Op <: AvailableOptions, +R <: Return](val systemPrecedence: Int)(implicit agent : GreenTeaAgent, component : ProactivityComponent)
+    extends Activity[R](agent, component) {
+    type StateStatus = Any
+    type ActivityParameters = Unit
+    type OptionObject = ActivityOptionObject
+
+
+
+    /**
+     * Convert the mailbox and the knowledge into this specific activity parameter and execute "execute" function
+     * @param mailbox
+     */
+    def getParameters(mailbox: List[Performative[PerformativeOption]], knowledge: dima.knowledge.KnowledgeBase): this.ActivityParameters = ???
+
+  }
+
+
   /* */
   /* InitialisationLoop */
 
-  abstract class proactivityInitialise() extends InitialisationActivity[ActivityOption] {
-    val systemPrecedence = 0
-  }
+  class proactivityInitialise extends ProactivityCommand[InitialActivityAvailableOptions, Initialization](0)
 
   /* */
 
@@ -58,24 +81,16 @@ object activities {
   /* */
   /* Activity Loop */
 
-  abstract class preactivity() extends ExecutionActivity[ActivityOption] {
-    val systemPrecedence = 1
-  }
+  class preactivity extends ProactivityCommand[InitialActivityAvailableOptions, Execution](1)
 
-  abstract class activity() extends ExecutionActivity[ActivityOption] {
-    val systemPrecedence = 4
-  }
+  class activity extends ProactivityCommand[InitialActivityAvailableOptions, Execution](4)
 
-  abstract class postactivity() extends ExecutionActivity[ActivityOption] {
-    val systemPrecedence = 5
-  }
+  class postactivity extends ProactivityCommand[InitialActivityAvailableOptions, Execution](5)
 
   /* */
 
 
-  abstract class proactivityTerminate() extends TerminationActivity[ActivityOption] {
-    val systemPrecedence = 6
-  }
+  class proactivityTerminate extends ProactivityCommand[InitialActivityAvailableOptions, Termination](6)
 
 
   /*

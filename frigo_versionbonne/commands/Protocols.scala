@@ -1,5 +1,9 @@
+package commands
+
+import dima.{AgentIdentifier, GreenTeaSeed}
+
 /**
-GreenTea Language
+GreenTeaObject Language
 Copyright 2013 Sylvain Ductor
   * */
 /**
@@ -18,26 +22,6 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
-
-package dima
-
-import dima._
-import scala.collection.mutable
-
-trait Role extends State
-
-abstract class Conversation extends GreenTeaObject with Identification[ConversationIdentifier] with mutable.MultiMap[Role,AgentIdentifier]
-
-abstract class Protocol(val rolesPlayed : List[Role])  extends GreenTeaSeed with Identification[ProtocolIdentifier]{
-
-  import dima.commands.protocols._
-
- def startConversation(acq : GroupIdentifier) : Conversation
-
+trait Protocols extends GreenTeaSeed {
 
 }
-
-
-
-
-

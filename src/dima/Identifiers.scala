@@ -47,7 +47,7 @@ case class ComponentIdentifier(id: String) extends GreenTeaComponentIdentifier
 
 case class ProtocolIdentifier() extends GreenTeaComponentIdentifier
 
-case class CommandIdentifier() extends GreenTeaComponentIdentifier
+case class CommandIdentifier(val s : Identifier) extends GreenTeaComponentIdentifier
 
 /**
  * Localdentifier is the most general agent identifier
@@ -105,7 +105,6 @@ class AgentIdentifier(val name: Identifier)
   * Allow artefact handling
   *
   * @param groupName
-  * @param
   */
 class GroupIdentifier(val groupName: Identifier, var groupReferee: AgentIdentifier)
   extends AgentIdentifier(groupName) with Set[AgentIdentifier] with Query {

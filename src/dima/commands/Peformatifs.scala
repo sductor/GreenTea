@@ -19,7 +19,9 @@ You should have received a copy of the Lesser GNU General Public License
 along with GreenTea. If not, see <http://www.gnu.org/licenses/>.
   * */
 
-package commands.performatives
+package dima.commands
+
+object performatives {
 
 import dima.speech._
 import dima._
@@ -29,7 +31,7 @@ import dima.sage.{ExceptionPerformative}
 * Interaction
 */
 
-class ACLOption extends PerformativeOption
+abstract class ACLOption extends PerformativeOption
 
   abstract case class inform() extends Performative[ACLOption]
 
@@ -45,7 +47,7 @@ abstract case class log() extends sage.LogPerformative
 abstract case class warning(e: Exception, c: String) extends ExceptionPerformative(e: Exception, c: String)
 
 
-abstract case class acquaintance() extends Performative[AcquaintanceOption]
+//abstract case class acquaintance() extends Performative[AcquaintanceOption]
 
   /*
 * Faulty activities termination
@@ -61,3 +63,5 @@ abstract  case class failure(e: Exception, c: String)
   extends ExceptionPerformative(e: Exception, c: String)
 
   //implicit def anyToActivation(v: Any): Activation = continue()
+
+}
