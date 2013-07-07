@@ -98,8 +98,13 @@ new CoalitionIdentifier (ids.head.nextCoalitionIdentifier, ids.head, members = i
        * Allow to update the execution activity of an agent if one hold a reference
        * */
      def apply(newActivityStatus: ExecutionStatus) = {
-       activity = newActivityStatus
+       onOff = newActivityStatus
      }
+
+     /** **
+       * Execute reaction for associated method
+       * */
+     def apply(p: Performative) : Either[p.type, GreenTeaException] = body.order(p)
 
      /////////////////////////////////////////////
      //////////////////////////// Execution

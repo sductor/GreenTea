@@ -156,6 +156,12 @@ with Identification[ComponentIdentifier] {
       }
     }
   }
+
+
+  /** **
+    * Execute reaction for associated method
+    * */
+  def apply(p: Performative): Either[p.type, GreenTeaException] = body.order(p)
 }
 
 
@@ -168,7 +174,7 @@ with Identification[ComponentIdentifier] {
 
 protected[dima] abstract class GreenTeaBush[S <: Core] extends mutable.List[GreenTeaLeaf[S]] {
 
-   val proactivities = Map[ComponentIdentifier, GreenTeaLeaf[S]]
+  val proactivities = Map[ComponentIdentifier, GreenTeaLeaf[S]]
   /* */
 
   protected[dima] def +(comp: GreenTeaLeaf[S]) = apply(comp.id, comp)
@@ -196,12 +202,12 @@ trait Role extends Core
  */
 class GreenTeaTree[R <: Role] extends GreenTeaLeaf
 with Map[R, List[AgentIdentifier]]
-with Identification[Identifier]{
+with Identification[Identifier] {
 
   type ActorContext
 
-    //Requiert le contexte de chaque agent et
-    def apply() : ConversationIdentifier
+  //Requiert le contexte de chaque agent et
+  def apply(): ConversationIdentifier
 }
 
 package commands {
@@ -236,13 +242,11 @@ protected[dima] trait GreenTeaOption extends Hook {
 }
 
 
-
-
-protected[dima] class ProactivityCommand[Op <: AvailableOptions, +R <: ActivityHook](proact : Proactivity[ActivityHook] = proactivity)(implicit agent: Agent[Core])
+protected[dima] class ProactivityCommand[Op <: AvailableOptions, +R <: ActivityHook](proact: Proactivity[ActivityHook] = proactivity)(implicit agent: Agent[Core])
   extends GreenTeaCommand[Op] with Comparable[ProactivityCommand[AvailableOptions, ActivityHook]] {
 
 
-  def apply(option : GreenTeaOption) {
+  def apply(option: GreenTeaOption) {
 
   }
 
@@ -313,11 +317,12 @@ object proactivity {
 
   /* Local */
 
-  def reactionFor(p : Performative) : Either[p.ReturnType,GreenTeaException]
+  def reactionFor(p: Performative): Either[p.ReturnType, GreenTeaException]
 
-  case class delegate[T](agent : GreenTeaAgent, context : Promise[T]) extends GreenTeaCommand[DelegationOption] {
-    def apply : Unit
+  case class delegate[T](agent: GreenTeaAgent, context: Promise[T]) extends GreenTeaCommand[DelegationOption] {
+    def apply: Unit
   }
+
   //Les options (onSuccess : PartialFunction[T])(onError :  PartialFunction[T])
 
 }
@@ -328,3 +333,87 @@ trait PerformativeOption extends AvailableOptions
 
 }
 
+package net.fwbrasil.sReflection
+
+object CascadeImplicits {
+
+  implicit def toYourself[T](value: T): Yourself[T] = new Yourself(value)
+
+  implicit def toCascade[T](value: T): Cascade[T] = new Cascade(value)
+
+  class Yourself[T](value: T) {
+    def sign = value
+  }
+
+  class Cascade[T](value: T) {
+    def cascade[R1](
+                     f1: T => R1) =
+      f1(value)
+
+    def cascade[R1, R2](
+                         f1: T => R1,
+                         f2: T => R2) = {
+      f1(value)
+      f2(value)
+    }
+
+    def cascade[R1, R2, R3](
+                             f1: T => R1,
+                             f2: T => R2,
+                             f3: T => R3) = {
+      f1(value)
+      f2(value)
+      f3(value)
+    }
+
+    def cascade[R1, R2, R3, R4](
+                                 f1: T => R1,
+                                 f2: T => R2,
+                                 f3: T => R3,
+                                 f4: T => R4) = {
+      f1(value)
+      f2(value)
+      f3(value)
+      f4(value)
+    }
+
+    def cascade[R1, R2, R3, R4, R5](
+                                     f1: T => R1,
+                                     f2: T => R2,
+                                     f3: T => R3,
+                                     f4: T => R4,
+                                     f5: T => R5) = {
+      f1(value)
+      f2(value)
+      f3(value)
+      f4(value)
+      f5(value)
+    }
+  }
+
+}
+
+import CascadeImplicits._
+
+class CascadeImplicitsExample {
+
+  class Turtle {
+    def clear = {}
+
+    def forward(v: Int) = {}
+
+    def turn(v: Int) = {}
+  }
+
+  val turtle = new Turtle
+
+  val res: Turtle =
+    turtle.cascade(
+      _.clear,
+      _.forward(10),
+      _.turn(90),
+      _.forward(20),
+      _.sign)
+
+  println(res)
+}
