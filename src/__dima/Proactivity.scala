@@ -21,12 +21,9 @@ along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
 
 package dima
 
-import dima.greentea._
-import dima.speech._
+import greentea._
+import dima.identifiers._
 
-import scala.collection.mutable
-import community.ActivitiesOption.ActivityOption
-import sun.management.Agent
 
 /**
  *

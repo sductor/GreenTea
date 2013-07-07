@@ -19,16 +19,13 @@ You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
 
-import _root_.dima._
-import community.{nativecommands, nativeoptions}
+
+package dima.greentea.body
+
+  import dima._
 import dima.greentea._
-import dima.speech._
+import dima.identifiers._
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-
-package context
-
-import greentea._
 
 ////////////////////////////////////////////////////////////////
 //////////////////////////// Body
@@ -50,7 +47,7 @@ trait Body extends GreenTeaSeed {
 
   /* Communication synchrone */
 
-  def order[R](m: SyncPerformative[R]): R
+  def order[R](m: Performative[R]): R
 
 
   /*Gestion de la mail box */
@@ -67,21 +64,6 @@ trait Body extends GreenTeaSeed {
   def update
 }
 
-////////////////////////////////////////////////////////////////
-//////////////////////////// Communication
-////////////////////////////////////////////////////////////////
-
-
-class Identifier(val name: String) extends GreenTeaObject
-
-implicit def stringToIdentifier (name: String): Identifier = new Identifier (name)
-
-type Performative[I <: Identifier] = GreenTeaObject
-
-type InternalPerformative[Return] = GreenTeaObject
-
-/* */
-
 
 /* */
 ////////////////////////////////////////////////////////////////
@@ -93,13 +75,9 @@ type InternalPerformative[Return] = GreenTeaObject
  * The agent that holds the information (the referee) must be provided
  * It can be an information about internal state
  */
-case class Query(referee: AgentIdentifier) extends Identifier(referee.name) {
+case class Query(referee : Identifier) extends GreenTeaObject
 
-  type I <: Information
-
-}
-
-type Information = Identification[Query]
+trait Information extends Identification[Query]
 
 /** *
   * Knowledge build a map of information to answer a list of Queries
@@ -115,13 +93,11 @@ class Knowledge[Q <: Query](queries: List[Q]) extends mutable.Map[Q, Information
 /**
  * A knowledge base allow agent to obtain hooks (i.e. Knowledge) about queries
  */
-type KnowledgeBase = GreenTeaObject {
+trait KnowledgeBase extends GreenTeaObject {
 
-import scala.collection.mutable
+def apply (query: Query): Option[Information] = ???
 
-def apply (query: Query): Option[Information]
-
-def apply (queries: List[Query] ): Knowledge
+def apply (queries: List[Query] ): Knowledge = ???
 
 
 }
@@ -133,7 +109,7 @@ def apply (queries: List[Query] ): Knowledge
 
 trait Hook extends GreenTeaObject {
 
-  def hook: Boolean = apply
+  def hook: Boolean
 }
 
 
@@ -143,33 +119,29 @@ object always extends Hook {
 
 /** ********* ***************/
 
-protected[dima] sealed trait ActivityHook extends Hook
+protected[dima] sealed trait ActivityStatus
 
 /** ********* ***************/
 
-case class interrupted() extends ActivityHook with Hook
-with InitializationHook with ExecutionHook with TerminationHook {
+case class interrupted() extends ActivityStatus with Hook
+with InitializationStatus with ExecutionStatus with TerminationStatus {
 
   val h: Hook
 
-}
-
-def interrupt (h: Hook) = {
-val i = new interrupted ()
-
+  def hook = h.hook
 }
 
 /** ********* ***************/
 
 /*
-InitializationHook  activities
+InitializationStatus  activities
 */
 
-protected[dima] trait InitializationHook extends ActivityHook
+protected[dima] trait InitializationStatus extends ActivityStatus
 
-case class initialized() extends InitializationHook
+case class initialized() extends InitializationStatus
 
-case class notInitialized() extends InitializationHook
+case class notInitialized() extends InitializationStatus
 
 //implicit defs : boolean =| initialisationtype
 
@@ -177,20 +149,20 @@ case class notInitialized() extends InitializationHook
  Proactive activities
  */
 
-protected[dima] trait ExecutionHook extends ActivityHook
+protected[dima] trait ExecutionStatus extends ActivityStatus
 
-case class continue() extends ExecutionHook
+case class continue() extends ExecutionStatus
 
-case class stopped() extends ExecutionHook
+case class stopped() extends ExecutionStatus
 
 /*
  Proactive activities termination
  */
 
-protected[dima] trait TerminationHook extends ActivityHook
+protected[dima] trait TerminationStatus extends ActivityStatus
 
-case class terminated() extends TerminationHook
+case class terminated() extends TerminationStatus
 
-case class notYet() extends TerminationHook
+case class notYet() extends TerminationStatus
 
 

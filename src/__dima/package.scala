@@ -1,9 +1,4 @@
-import dima.speech._
-import dima.speech.CommandIdentifier
-import dima.speech.ComponentIdentifier
-import greentea.{GreenTeaBush, GreenTeaLeaf}
-import scala.collection.mutable
-import scala.Some
+
 
 /**
 GreenTea Language
@@ -25,7 +20,13 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
+import dima.sage._
+import dima.greentea.body._
+import dima.greentea._
+import dima.identifiers._
 
+import scala.collection.mutable
+import scala.Some
  package object dima {
 
 
@@ -39,20 +40,20 @@ along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
    ////////////////////////////////////////////////////////////////
 
 	//Most General Identifier
-	type Identifier = CoalitionIdentifier
+	trait Identifier extends  CoalitionIdentifier
 
 /*
  * Implicit conversion of String, List[String] et List[Identifier] to Identifier
  */
 
-implicit def stringToIDentifier (s: String): Identifier = 
-new CoalitionIdentifier(id, id)
+implicit def stringToIDentifier (id: String): Identifier =
+new AgentIdentifier(id)
 
 implicit def idToList[I <: Identifier] (ids:  List[String]) : Identifier = 
-new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = ids)
+new CoalitionIdentifier (ids.head.nextCoalitionIdentifier, ids.head, members = ids)
 
 implicit def idToList[I <: Identifier] (ids:  List[I]) : Identifier = 
-new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = ids)
+new CoalitionIdentifier (ids.head.nextCoalitionIdentifier, ids.head, members = ids)
 
 
 
@@ -74,13 +75,12 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
    /** *
      *
      * @param id
-     * @param state
-     * @param List
-     * @tparam S
      */
-   class Agent[C <: Core](val id: Identifier, core: C)(implicit body: Body, sage: Sage)
-     extends GreenTeaLeaf[S] with GreenTeaBush[S] with Identification[AgentIdentifier] {
+   class Agent[C <: Core](id: PrivateIdentifier, core: C)(implicit b: Body, m: Sage)
+     extends GreenTeaLeaf[C] with GreenTeaBush[C] with Identification[PrivateIdentifier] {
 
+     val body: Body = b.build
+     val monitor: Sage = m.build
 
      /////////////////////////////////////////////
      //////////////////////////// ExecutionStatus
@@ -92,12 +92,12 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
       * * continue()
       * * interrupt(h : Hookable)
       */
-     var onOff: ExecutionHook = stopped()
+     var onOff: ExecutionStatus = stopped()
 
      /** **
        * Allow to update the execution activity of an agent if one hold a reference
        * */
-     def apply(newActivityStatus: ExecutionHook) = {
+     def apply(newActivityStatus: ExecutionStatus) = {
        activity = newActivityStatus
      }
 
@@ -142,13 +142,19 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
 
     /* and some greentea ... */
 
-    import community.native.performatives._
-    import community.native.options._
-
 
    }
 
+   implicit def interrupt (h: Hook) : interrupted.type = {
+     val i = interrupted ()
+     i.h = h
+     i
+   }
 
+
+   ////////////////////////////////////////////////////////////////
+   /////////////////////////////* Context */
+   ////////////////////////////////////////////////////////////////
    /**
     * To be implemented has object
     * @param b : Platform adapter
@@ -157,9 +163,11 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
    class ExecutionContextFactory(b: Body, s: Sage) {
 
      implicit val body: Body = b
-     implicit val sage: Sage = s
+     implicit val monitor: Sage = s
 
    }
+
+   implicit def exceptionToGreenTea(ex: Exception) = new GreenTeaException(Some(ex))(ex.cause())
 
    ////////////////////////////////////////////////////////////////
    /////////////////////////////* Core */
@@ -170,7 +178,7 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
 
      //Dynamic Core
 
-     def apply(neo: Core)
+     def apply(neo: Core) = ???
 
      // Informative Core
 
@@ -181,26 +189,26 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
      sealed abstract class ControlAccess {
 
        //cores whether agent id has access to the associated info
-       def apply(id: AgentIdentifier): Boolean
+       def apply(id: Identifier): Boolean
 
      }
 
      //this default access put on a jvm-shared map
      case object everyone extends ControlAccess {
 
-       def apply(id: AgentIdentifier): Boolean = true
+       def apply(id: Identifier): Boolean = true
 
      }
 
      case object none extends ControlAccess {
 
-       def apply(id: AgentIdentifier): Boolean = false
+       def apply(id: Identifier): Boolean = false
 
      }
 
-     case class only(ids: List[AgentIdentifier]) extends ControlAccess {
+     case class only(ids: List[Identifier]) extends ControlAccess {
 
-       def apply(id: AgentIdentifier): Boolean = ids contains id
+       def apply(id: Identifier): Boolean = ids contains id
 
      }
 
@@ -234,7 +242,7 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
 
      }
 
-     implicit def anyToShare[T](value: T): Shared[T] = new Shared[T](value, new everyone)
+     implicit def anyToShare[T](value: T): Shared[T] = new Shared[T](value, everyone)
 
      implicit def anyToShareWithCA[T](value: T, ca: ControlAccess): Shared[T] = new Shared[T](value, ca)
 
@@ -243,7 +251,10 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
 
      /* Etendu avec des trait Roles */
 
+     //
+
      def accept(p : GreenTeaTree) : Boolean = true
+
 
 
      //Auto-contrôle
@@ -251,17 +262,14 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
      /* Contains the activity status of component : updated by the state */
      private val hookedComponents: mutable.ListMap[ComponentIdentifier, Hook] = new mutable.ListMap[ComponentIdentifier, Hook]
 
-     /* Contains the activity status of commands : updated by the command itself */
-     private val hookedMethods: mutable.ListMap[CommandIdentifier, Hook] = new mutable.ListMap[CommandIdentifier, Hook]
-
      /* List of agent components */
      def components: List[ComponentIdentifier] = ???
 
      /* return component id current activity */
-     def apply(id: InternalIdentifier): ExecutionHook = ???
+     def activity(id: ComponentIdentifier): ExecutionStatus = ???
 
      /* update component id current activity */
-     def update(id: InternalIdentifier, status: ExecutionHook) = ???
+     def update(id: ComponentIdentifier, status: ExecutionStatus) = ???
 
      /*  Intents*/
 
@@ -283,14 +291,47 @@ new CoalitionIdentifier (ids.head.nexrCoalitionIdentifier, ids.head, members = i
    ////////////////////////////////////////////////////////////////
 
 
-   trait StateSave extends GreenTeaObject
+   trait CoreSave extends GreenTeaObject
 
-   def agent[S <: State, A <: Agent[S]] (id: AgentIdentifier, spec: Manifest[A], state: S) = ??? //Remplacer manifest par typetag
+   def agent[S <: Core, A <: Agent[S]] (id: AgentIdentifier, spec: TypeTag[A], state: S) = ???
 
-   def state (s: StateSave): State
+   def state (s: CoreSave): Core
 
-   def save (s: State): StateSave
+   def save (s: Core): CoreSave
+
+   ////////////////////////////////////////////////////////////////
+   ///////////////////////////// /* Speech */
+   ////////////////////////////////////////////////////////////////
 
 
 
+   /* Messages */
+
+   /* */
+
+   type GreenTeaPerformative = GreenTeaSeed  {
+
+     val messId: MessageIdentifier = new MessageIdentifier
+
+   }
+
+   trait Performative[+I <: Identifier]  extends GreenTeaPerformative {
+
+     type ReturnType
+
+     var receiver: Option[List[Identifier]] = None
+
+     val sender: Identifier
+
+     val receivers: Option[List[Identifier]]
+
+     /* Syntaxic sugar */
+     def apply(): Option[ReturnType] = {
+       receivers match {
+         case None => body.order(this)
+         case Some(id) if id.equals(this.id) => body.order(this)
+         case _ => body.send(this)
+       }
+     }
+   }
  }

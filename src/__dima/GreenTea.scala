@@ -19,13 +19,14 @@ You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
 
-package greentea
+package dima.greentea
 
-import _root_.dima.{Core, GreenTeaObject}
-import _root_.dima.sage._
-import _root_.dima.speech._
+import dima._
+import dima.identifiers._
+import body._
+import dima.sage._
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.concurrent.Promise
 
 //////////////////////////////////    //////////////////////////////////
 // //////////////////////// GREENTEA IMPLEMENTATION
@@ -161,18 +162,18 @@ with Identification[ComponentIdentifier] {
 /**
  * ProactivityPool :
  *
- * Pool of ProactivityComponent that encapsulate the execution of a set of commands
+ * Pool of GreenTeaLeaf that encapsulate the execution of a set of commands
  *
  */
 
-protected[dima] abstract class GreenTeaBush[S <: Core] extends mutable.List[ProactivityComponent[S]] {
+protected[dima] abstract class GreenTeaBush[S <: Core] extends mutable.List[GreenTeaLeaf[S]] {
 
-   val proactivities = Map[ComponentIdentifier, ProactivityComponent[S]]
+   val proactivities = Map[ComponentIdentifier, GreenTeaLeaf[S]]
   /* */
 
-  protected[dima] def +(comp: ProactivityComponent[S]) = apply(comp.id, comp)
+  protected[dima] def +(comp: GreenTeaLeaf[S]) = apply(comp.id, comp)
 
-  protected[dima] def apply(comp: ComponentIdentifier): ProactivityComponent[S] = ???
+  protected[dima] def apply(comp: ComponentIdentifier): GreenTeaLeaf[S] = ???
 
   def componentsIdentifiers: List[ComponentIdentifier] = ???
 
@@ -195,7 +196,7 @@ trait Role extends Core
  */
 class GreenTeaTree[R <: Role] extends GreenTeaLeaf
 with Map[R, List[AgentIdentifier]]
-with Identification[GroupIdentifier]{
+with Identification[Identifier]{
 
   type ActorContext
 
@@ -203,7 +204,8 @@ with Identification[GroupIdentifier]{
     def apply() : ConversationIdentifier
 }
 
-package dima.commands._
+package commands {
+
 
 //////////////////////////////////    //////////////////////////////////
 // //////////////////////// GREENTEA Commands
@@ -309,15 +311,20 @@ object proactivity {
   case class proactivityTerminate() extends ProactivityCommand[community.commands.ActivityOptions, TerminationHook](6)
 
 
-  /* */
+  /* Local */
 
-  def executionFor[ReturnType](p : InternalPerformative[ReturnType]) : orElse[p.ReturnType,GreenTeaException] {
+  def reactionFor(p : Performative) : Either[p.ReturnType,GreenTeaException]
 
-
+  case class delegate[T](agent : GreenTeaAgent, context : Promise[T]) extends GreenTeaCommand[DelegationOption] {
+    def apply : Unit
   }
+  //Les options (onSuccess : PartialFunction[T])(onError :  PartialFunction[T])
 
 }
 
 
 trait PerformativeOption extends AvailableOptions
+
+
+}
 
