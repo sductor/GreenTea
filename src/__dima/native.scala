@@ -144,6 +144,7 @@ object options {
     def apply(op: ActivityOptionParameters): Boolean = ???
   }
 
+}
   /* When
 
   type When = Boolean

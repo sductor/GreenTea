@@ -44,14 +44,9 @@ package object community {
   /**
    * Apply results on a state transition associated to methods execution that may affect the environnment
     */
-  class Branch[C <: Core] extends GreenTeaObject with List[Performative[Identifier]]{
+  abstract class Branch[C <: Core] extends Cascade[C] with List[Performative[Identifier]]
 
-    def apply(core : C) : Unit = {
-      //cascade
-    }
-  }
-
-  class Contract extends GreenTeaObject with  Map[Identifier,Branch[Core]]
+  abstract class Contract extends GreenTeaObject with  Map[Identifier,Branch[Core]]
 
 
 }

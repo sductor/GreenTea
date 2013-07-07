@@ -28,7 +28,7 @@ along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
    ////////////// Prototyping
    //////////////////////
 
-   class Tree extends Map[TypeTag[Core], Branch]
+   class Tree extends Map[Manifest[Core], Branch]
 
    class AcquaintanceGraphBuilder  extends GreenTeaObject
 
