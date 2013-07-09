@@ -54,7 +54,7 @@ trait CommunicationComponent[I <: Identifier] extends GreenTeaObject {
 
   def send(m: P)
 
-  def flushMail: List[P]
+  def receive(m : P) = ag ! m
 }
 
 /**
