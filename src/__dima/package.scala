@@ -1,5 +1,4 @@
 
-
 /**
 GreenTea Language
 Copyright 2013 Sylvain Ductor
@@ -339,4 +338,22 @@ new CoalitionIdentifier (ids.head.nextCoalitionIdentifier, ids.head, members = i
        }
      }
    }
+   
+   class Planner {
+Type Action // The agent possible actions
+
+Type UserPreference//allows to compare contexts for a specific agent
+
+Type Context //holds the variables required to compute the result of an action 
+
+// a politic associate a reaction to each possible situation // call of the expert system
+def politic(c : Context, p : UserPreference) : Action
+//for a given politics, returns the set of action that can be computed 
+def possiblePolitic(c : Context, p : UserPreference) : Enumerable[Action]
+
+//Predicate the result of an action// call of the expert system 
+def environment(c : Context, a : Action) : Context
+
+}
+
  }
