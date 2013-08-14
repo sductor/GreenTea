@@ -5,7 +5,7 @@ Copyright 2013 Sylvain Ductor
 /**
 This file is part of GreenTeaObject.
 
-GreenTeaObject is free software: you can redistribute it and/or modify
+GreenTeaObject is isFreed software: you can redistribute it and/or modify
 it under the terms of the Lesser GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -21,11 +21,14 @@ along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
 
 package community
 
-import dima.greentea.GreenTeaLeaf
+import dima._
+import dima.greentea._
+import dima.greentea.{GreenTeaCore, GreenTeaLeaf}
 
 package object proactivities {
 
-  type ProactivityComponent = GreenTeaLeaf
+
+  class ProactivityComponent[Core <: GreenTeaCore](val core : Core) extends GreenTeaLeaf[Core]
 
 
 }

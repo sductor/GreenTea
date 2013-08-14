@@ -1,3 +1,6 @@
+import community._
+import dima._
+
 /**
 GreenTea Language
 Copyright 2013 Sylvain Ductor
@@ -19,34 +22,25 @@ You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
 
-package community
-
-import dima._
-import dima.greentea._
-import dima.greentea.{GreenTeaCore, GreenTeaTree}
-
-package object protocols {
-/*
-Protocols
- */
-
-/**
- * Role is a GreenTeaCore trait that implements Protocol required decision function
- * A protocol is associated to a root role
- */
-//trait Role extends GreenTeaCore
-
-/**
- * Interaction specification between a mutable set of agent mapped to roles
- * @param conversationName : the instance conversation name
- */
-class Protocol[Core <: GreenTeaCore](conversationName: String, val core : Core) extends GreenTeaTree[Core] {
-
-  /* and some greentea ... */
+ package object configuration {
 
 
-  /* */
-  //Requiert le contexte de chaque agent et
-}
+   ///////////////////////
+   ////////////// Prototyping
+   //////////////////////
 
-}
+   //TODO class Tree extends Map[Manifest[GreenTeaCore], Branch[GreenTeaCore]]
+
+   class AcquaintanceGraphBuilder  extends GreenTeaObject
+
+   /*TODO  class MASPrototype(user : String, prototypes : List[GreenTeaCore], acquaintances : AcquaintanceGraphBuilder, initialStates : Tree)  extends Artefact(user) {
+
+      def build = ???
+
+       def launch = ???
+     }*/
+
+
+
+
+ }

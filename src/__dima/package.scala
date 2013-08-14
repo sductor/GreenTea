@@ -6,7 +6,7 @@ Copyright 2013 Sylvain Ductor
 /**
 This file is part of GreenTeaObject.
 
-GreenTeaObject is free software: you can redistribute it and/or modify
+GreenTeaObject is isFreed software: you can redistribute it and/or modify
 it under the terms of the Lesser GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -19,341 +19,264 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the Lesser GNU General Public License
 along with GreenTeaObject.  If not, see <http://www.gnu.org/licenses/>.
   * */
-import dima.sage._
-import dima.greentea.body._
+
+import dima.dsl._
+import dima.dsl.performatives._
 import dima.greentea._
-import dima.identifiers._
 
+import dima.monitors.GreenTeaException
 import scala.collection.mutable
-import scala.Some
- package object dima {
+import scala.reflect.runtime.universe._
+import scala.collection.immutable.HashSet
 
+package dima {
 
 
-   trait GreenTeaObject
-     extends Serializable with Cloneable
+protected[dima] class Ticker(t: Any) extends Hook {
+  def isFreed: Boolean = ???
+}
 
+sealed class FuzzyTicker
 
-   ////////////////////////////////////////////////////////////////
-   //////////////////////////// Identification
-   ////////////////////////////////////////////////////////////////
+case class veryLow() extends FuzzyTicker
 
-	//Most General Identifier
-	trait Identifier extends  CoalitionIdentifier
+case class low() extends FuzzyTicker
 
-/*
- * Implicit conversion of String, List[String] et List[Identifier] to Identifier
- */
+case class normal() extends FuzzyTicker
 
-implicit def stringToIDentifier (id: String): Identifier =
-new AgentIdentifier(id)
+case class high() extends FuzzyTicker
 
-implicit def idToList[I <: Identifier] (ids:  List[String]) : Identifier = 
-new CoalitionIdentifier (ids.head.nextCoalitionIdentifier, ids.head, members = ids)
+case class veryHigh() extends FuzzyTicker
 
-implicit def idToList[I <: Identifier] (ids:  List[I]) : Identifier = 
-new CoalitionIdentifier (ids.head.nextCoalitionIdentifier, ids.head, members = ids)
 
+//This class is used to denote the return of a asynchronous function execution
+trait AsynchronousExecution extends GreenTeaException
 
-
-	type Hook = GreenTeaSeed with Identification[Identifier] {
-	
-		def free : Unit => Boolean
-		
-	}
-
-
-/*
- * String, Set[String] et Set[Identifier] can be now used as native Identifier 
- */
-
-   ////////////////////////////////////////////////////////////////
-   //////////////////////////// Agent
-   ////////////////////////////////////////////////////////////////
-
-   /** *
-     *
-     * @param id
-     */
-   class Agent[C <: Core](id: PrivateIdentifier, core: C)(implicit b: Body, m: Sage)
-     extends GreenTeaLeaf[C] with GreenTeaBush[C] with Identification[PrivateIdentifier] {
-
-     val body: Body = b.build
-     val monitor: Sage = m.build
-
-     /////////////////////////////////////////////
-     //////////////////////////// ExecutionStatus
-     /////////////////////////////////////////////
-     /**
-      * The loop execution of the agent is controlled by isActive
-      * Once can apply to isActive :
-      * * stop()
-      * * continue()
-      * * interrupt(h : Hookable)
-      */
-     var onOff: ExecutionStatus = stopped()
-
-     /** **
-       * Allow to update the execution activity of an agent if one hold a reference
-       * */
-     def apply(newActivityStatus: ExecutionStatus) = {
-       onOff = newActivityStatus
-     }
-
-     /** **
-       * Execute reaction for associated method
-       * */
-     def apply(p: Performative) : Either[p.type, GreenTeaException] = body.order(p)
-
-     /////////////////////////////////////////////
-     //////////////////////////// Execution
-     /////////////////////////////////////////////
-
-     /* Launch the agent */
-     def start {
-       //body encapsulates a context of execution, i.e. 
-       body.start()
-     }
-
-     /* define its behavior */
-
-     def execute {
-	   
-	   //starting
-       activity = continue()
-       
-       //allows core to initialize and initialize components activity
-       core.intentsInitiation
-       
-       //agent runs while it has not been updated with (stopped())
-       while (!activity.equals(stopped())) {
-       
-		 //wait while hooked interruption is not finished	
-         if (activity.equals(interrupted()) && activity.hook) {
-           activity = continue()
-         } 
-         
-         //running mode
-         else if (activity.equals(continue())) {
-           body.update
-           core.intentsUpdate
-           doCycle
-           apply(state.agentActivity())
-           sage.execute
-         }
-       }
-     }
-
-    /* and some greentea ... */
-
-
-   }
-
-   implicit def interrupt (h: Hook) : interrupted.type = {
-     val i = interrupted ()
-     i.h = h
-     i
-   }
-
-
-   ////////////////////////////////////////////////////////////////
-   /////////////////////////////* Context */
-   ////////////////////////////////////////////////////////////////
-   /**
-    * To be implemented has object
-    * @param b : Platform adapter
-    * @param s : Fault-tolerance layer
-    */
-   class ExecutionContextFactory(b: Body, s: Sage) {
-
-     implicit val body: Body = b
-     implicit val monitor: Sage = s
-
-   }
-
-   implicit def exceptionToGreenTea(ex: Exception) = new GreenTeaException(Some(ex))(ex.cause())
-
-   ////////////////////////////////////////////////////////////////
-   /////////////////////////////* Core */
-   ////////////////////////////////////////////////////////////////
-
-
-   trait Core extends GreenTeaObject {
-
-     //Dynamic Core
-
-     def apply(neo: Core) = ???
-
-     // Informative Core
-
-     /**
-      * ControlAccess express a control of the access of an information for an agent
-      *
-      */
-     sealed abstract class ControlAccess {
-
-       //cores whether agent id has access to the associated info
-       def apply(id: Identifier): Boolean
-
-     }
-
-     //this default access put on a jvm-shared map
-     case object everyone extends ControlAccess {
-
-       def apply(id: Identifier): Boolean = true
-
-     }
-
-     case object none extends ControlAccess {
-
-       def apply(id: Identifier): Boolean = false
-
-     }
-
-     case class only(ids: List[Identifier]) extends ControlAccess {
-
-       def apply(id: Identifier): Boolean = ids contains id
-
-     }
-
-     case class excepted(ids: List[AgentIdentifier]) extends ControlAccess {
-
-       def apply(id: AgentIdentifier): Boolean = !(ids contains id)
-
-     }
-
-     /** *
-       * Automatically converted and handled type for state information sourcing
-       *
-       *
-       * Shared state (informations are synchronized to a JVM-bounded map)
-       * val publicKey : Shared[Int] = rand.nextLong()
-       * val secret : Shared[Int] = ("the secret",only(this.id))
-       * @param value
-       * @param access
-       * @param id
-       * @tparam T
-       */
-
-     //Utilise id avec
-     class Shared[+T](val value: T, val access: ControlAccess)(implicit val id: AgentIdentifier) extends Information {
-
-       //Utilise
-       def apply(): Option[T] = access(id) match {
-         case true => Some(value)
-         case false => None
-       }
-
-     }
-
-     implicit def anyToShare[T](value: T): Shared[T] = new Shared[T](value, everyone)
-
-     implicit def anyToShareWithCA[T](value: T, ca: ControlAccess): Shared[T] = new Shared[T](value, ca)
-
-
-     //Decisional Core
-
-     /* Etendu avec des trait Roles */
-
-     //
-
-     def accept(p : GreenTeaTree) : Boolean = true
-
-
-
-     //Auto-contrôle
-
-     /* Contains the activity status of component : updated by the state */
-     private val hookedComponents: mutable.ListMap[ComponentIdentifier, Hook] = new mutable.ListMap[ComponentIdentifier, Hook]
-
-     /* List of agent components */
-     def components: List[ComponentIdentifier] = ???
-
-     /* return component id current activity */
-     def activity(id: ComponentIdentifier): ExecutionStatus = ???
-
-     /* update component id current activity */
-     def update(id: ComponentIdentifier, status: ExecutionStatus) = ???
-
-     /*  Intents*/
-
-     /* Executed once at the agent initialization */
-     def intentsInitiation
-
-     /* Executed cyclicly before proactivity execution */
-     def intentsUpdate
-
-
-     // Prototyping
-
-     def clone()
-
-   }
-
-   ////////////////////////////////////////////////////////////////
-   ///////////////////////////// /* Protoyping */
-   ////////////////////////////////////////////////////////////////
-
-
-   trait CoreSave extends GreenTeaObject
-
-   def agent[S <: Core, A <: Agent[S]] (id: AgentIdentifier, spec: TypeTag[A], state: S) = ???
-
-   def state (s: CoreSave): Core
-
-   def save (s: Core): CoreSave
-
-   ////////////////////////////////////////////////////////////////
-   ///////////////////////////// /* Speech */
-   ////////////////////////////////////////////////////////////////
-
-
-
-   /* Messages */
-
-   /* */
-
-   type GreenTeaPerformative = GreenTeaSeed  {
-
-     val messId: MessageIdentifier = new MessageIdentifier
-
-   }
-
-   trait Performative[+I <: Identifier]  extends GreenTeaPerformative {
-
-     type ReturnType
-
-     var receiver: Option[List[Identifier]] = None
-
-     val sender: Identifier
-
-     val receivers: Option[List[Identifier]]
-
-     /* Syntaxic sugar */
-     def apply(): Option[ReturnType] = {
-       receivers match {
-         case None => body.order(this)
-         case Some(id) if id.equals(this.id) => body.order(this)
-         case _ => body.send(this)
-       }
-     }
-   }
-   
-   class Planner {
-Type Action // The agent possible actions
-
-Type UserPreference//allows to compare contexts for a specific agent
-
-Type Context //holds the variables required to compute the result of an action 
-
-// a politic associate a reaction to each possible situation // call of the expert system
-def politic(c : Context, p : UserPreference) : Action
-//for a given politics, returns the set of action that can be computed 
-def possiblePolitic(c : Context, p : UserPreference) : Enumerable[Action]
-
-//Predicate the result of an action// call of the expert system 
-def environment(c : Context, a : Action) : Context
+object AsynchronousExecution extends AsynchronousExecution
 
 }
 
- }
+package object dima {
+
+  ////////////////////////////////////////////////
+  // ////////////////////// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! /* DSL CONFIGURATION */
+  ////////////////////////////////////////////////
+
+  type DefaultConsumer[Initial <: ToConsume, ToConsume] = NonConsumingConsumer[Initial, ToConsume]
+
+  /* */
+
+  private type BasicActivityOptions = ActivityOption with ActionOption with WhenOption with KnowledgeOption
+
+  type ProactivityOptions = BasicActivityOptions with FrequenceOption with MailsOption
+
+  type ReactivityOptions = BasicActivityOptions
+
+
+  /* */
+
+  private type BasicPerformativeOptions = PerformativeOption
+    with SendActionOption with ReceiverNinReplyToOption with ReplyToOption
+    with ReplyWithOption
+    with PropagateOption with ProxyOption
+
+  type ACLOptions = BasicPerformativeOptions
+
+  type LogOptions = BasicPerformativeOptions
+
+  type AcquaintanceOptions = BasicPerformativeOptions
+
+  type ExceptionOptions = BasicPerformativeOptions
+
+  ////////////////////////////////////////////////
+  // ////////////////////// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! /* END OF DSL CONFIGURATION */
+  ////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////  ////////////////////////////////////////////////
+  // ////////////////////// /* Most Basic Definitions */
+  ////////////////////////////////////////////////  ////////////////////////////////////////////////
+
+  //Most General Identifier
+  type Identifier = CoalitionIdentifier
+
+  /* object Identifier extends SeqFactory[List]{
+     type A = Agent
+     def newBuilder[A]: mutable.Builder[A, List[A]] = new ListBuffer[A]
+   }   */
+
+
+  ////////////////////////////////////////////////  ////////////////////////////////////////////////
+  // ////////////////////// /* DSL IMPLICITS */
+  ////////////////////////////////////////////////  ////////////////////////////////////////////////
+
+
+  trait GreenTeaObject extends Serializable {
+    ////////////////////////////////////////////////
+    // ////////////////////// /* IDENTIFICATION IMPLICITS */
+    ////////////////////////////////////////////////
+    /*
+* Implicit conversion of String, List[String] et List[Identifier] to Identifier
+*/
+
+    implicit def stringToIDentifier(id: String): Identifier =
+      new AgentIdentifier(id)
+
+    implicit def privateIDentifierToAgentIdentifier[_](id: PrivateIdentifier[_]): AgentIdentifier =
+      new AgentIdentifier(id.name)
+
+    implicit def nameToList(ids: List[String]): Identifier =
+      new Identifier(
+        name = new AgentIdentifier(ids.head).nextCoalitionName,
+        members = HashSet(ids.map(n => new AgentIdentifier(n)))) {
+        val proxy = new AgentIdentifier(ids.head)
+      }
+
+    //lourd
+
+
+    implicit def idToList(ids: List[Identifier]): Identifier =
+      new Identifier(name = ids.head.nextCoalitionName, members = Set().flatMap(ids)) {
+        val proxy = new AgentIdentifier(ids.head.name)
+      }
+
+
+    class Typed[A](value: A)(implicit val key: TypeTag[A]) {
+      def toPair: (TypeTag[_], Any) = (key, value)
+    }
+
+    // object Typed {
+    implicit def toTyped[A: TypeTag](a: A) = new Typed(a)
+
+    implicit def toTypable[A](a: A) = new {
+      def typedAs[O >: A : TypeTag] = new Typed[O](a)(typeTag[O])
+    }
+    // }
+    ////////////////////////////////////////////////
+    // ////////////////////// /* Option IMPLICITS */
+    ////////////////////////////////////////////////
+
+    implicit def boolToFun(w: Boolean): () => Boolean = {
+      def whenDef(): Boolean = w
+      whenDef
+    }
+
+    implicit def intToTicker(t: Int): Ticker = new Ticker(t)
+
+    implicit def fuzzyTickerToTicker(ft: FuzzyTicker): Ticker = new Ticker(ft)
+
+    ////////////////////////////////////////////////
+    // ////////////////////// /* RETURN TYPES IMPLICITS */
+    ////////////////////////////////////////////////
+
+    implicit def interrupt(hook: Hook): interrupted = {
+      val i = interrupted()
+      i.h = Some(hook)
+      i
+    }
+
+    implicit def defaultInitializationReturn: InitializationStatus = notInitialized()
+
+    implicit def defaultExecutionReturn[P](a: P => _): P => ExecutionStatus = a.andThen(_ => continue())
+
+    implicit def defaultTerminationReturn: TerminationStatus = terminated()
+
+    implicit def defaultReactivityReturn: Either[_, GreenTeaException] = Right(AsynchronousExecution)
+
+    ////////////////////////////////////////////////
+    // ////////////////////// /* EXCEPTION IMPLICITS */
+    ////////////////////////////////////////////////
+
+    implicit def exceptionToGreenTea(ex: Throwable) = new GreenTeaException(Some(ex))
+
+    implicit def greenTeexceptionToOption(e: GreenTeaException): Option[GreenTeaException] = Some(e)
+
+    implicit def exceptionToOptionGreenTea(ex: Throwable) = Some(new GreenTeaException(Some(ex)))
+  }
+
+
+  //////////////////////////////////////////////// ////////////////////////////////////////////////
+  // ////////////////////// /* Tools */
+  ////////////////////////////////////////////////  ////////////////////////////////////////////////
+
+  trait mutableMap[K, V] extends mutable.Map[K, V] with  GreenTeaObject{
+
+    val localMap = new mutable.HashMap[K, V]()
+
+    def +=(kv: (K, V)): this.type = {
+      localMap += kv;
+      this
+    }
+
+    def -=(key: K): this.type = {
+      localMap -= key;
+      this
+    }
+
+    override def empty: mutable.Map[K, V] = localMap.empty
+
+    def get(key: K): Option[V] = localMap.get(key)
+
+    def iterator: Iterator[(K, V)] = localMap.iterator
+
+  }
+
+
+
+  trait TypedMap extends GreenTeaObject{
+
+    // Didier Dupont   http://stackoverflow.com/questions/7335946/class-type-as-key-in-map-in-scala
+
+
+
+    private val inner = new mutable.HashMap[TypeTag[_], Any]()
+
+    def +=[A](t: Typed[A]) = {
+      inner += t.toPair
+    }
+
+    def +=[A: TypeTag](a: A) = {
+      inner += (typeTag[A] -> a)
+    }
+
+    def -=[A: TypeTag]() = {
+      inner -= typeTag[A]
+    }
+    def forall[A](p: A => Boolean): Boolean = ???
+    /* */
+
+    //def apply[A: TypeTag]: A = inner(typeTag[A]).asInstanceOf[A]
+
+    def apply[A: TypeTag]: Option[A] = inner.get(typeTag[A]).map(_.asInstanceOf[A])
+
+
+
+    def values = inner.values
+
+    // def apply(items: Typed[_]*) = new TypedMap(Map(items.map(_.toPair): _*))
+  }
+
+  /* object TypedTest {
+
+     import Typed._
+
+     val repository = TypedMap("foo", 12, "bar".typedAs[Any])
+
+     repository[String] // returns "foo"
+     repository.get[Any] // returns Some("bar")
+   }     */
+  trait TypedKey  {
+    type GET
+
+    protected val get: GET
+
+    def unary_~ : GET = get
+  }
+}
+
+
+/*
+type Hook = GreenTeaSeed with Identification[Identifier] {
+
+def isFreed: Unit => Boolean
+
+}    */
